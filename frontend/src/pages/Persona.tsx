@@ -1,16 +1,42 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { usePersonaOverview } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
-import { Card, Kpi, Avatar, Progress, Badge } from '../components/ui'
-import { ProyectoRow, TareaRow, BloqueoCard } from '../components/rows'
-import { cn, TONES, cargaTone, type Tone } from '../lib/ui'
+import { Card, Kpi, Avatar, Progress, Badge, EstadoBadge } from '../components/ui'
+import { TareaRow, BloqueoCard } from '../components/rows'
+import { cn, TONES, cargaTone, barTone, type Tone } from '../lib/ui'
 import { Cargando } from './Personal'
-import type { EstadoCarga } from '../types'
+import type { EstadoCarga, ProyectoLite, Tarea } from '../types'
 
 const ESTADO_CARGA: Record<EstadoCarga, { label: string; tone: Tone }> = {
   saturado: { label: 'Saturado', tone: 'red' },
   ok: { label: 'En carga', tone: 'amber' },
   holgura: { label: 'Con holgura', tone: 'emerald' },
+}
+
+/** Un proyecto con las tareas de la persona anidadas visualmente debajo. */
+function ProyectoConTareas({ p, tareas }: { p: ProyectoLite & { esResponsable: boolean }; tareas: Tarea[] }) {
+  const navigate = useNavigate()
+  return (
+    <div className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 overflow-hidden">
+      <div className="flex items-center gap-2.5 px-4 h-12 bg-zinc-50/60 dark:bg-zinc-800/30 border-b border-zinc-100 dark:border-zinc-800">
+        <span className={cn('w-2 h-2 rounded-full shrink-0', TONES[barTone(p.estado)].dot)} />
+        <button onClick={() => navigate(`/proyecto/${p.id}`)} className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 hover:text-emerald-600 dark:hover:text-emerald-400 truncate">{p.nombre}</button>
+        <EstadoBadge estado={p.estado} label={p.estadoLabel} />
+        {p.esResponsable && <Badge tone="emerald" dot={false}>Responsable</Badge>}
+        <span className="ml-auto text-[11px] text-zinc-400 font-mono shrink-0">{tareas.length} tarea{tareas.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {tareas.length > 0 ? (
+        <div className="py-1.5 pr-2">
+          <div className="ml-5 border-l-2 border-zinc-150 dark:border-zinc-800 pl-1">
+            {tareas.map((t) => <TareaRow key={t.id} t={t} showProyecto={false} />)}
+          </div>
+        </div>
+      ) : (
+        <p className="px-4 py-3 text-[12px] text-zinc-400">Sin tareas asignadas a esta persona en el proyecto.</p>
+      )}
+    </div>
+  )
 }
 
 export function Persona() {
@@ -25,12 +51,14 @@ export function Persona() {
   const { usuario, kpis, proyectos, tareas, bloqueos } = data
   const ct = cargaTone(kpis.carga)
   const estado = ESTADO_CARGA[kpis.estado]
-  const lidera = proyectos.filter((p) => p.esResponsable)
-  const participa = proyectos.filter((p) => !p.esResponsable)
+
+  const tareasDe = (pid: number) => tareas.filter((t) => t.proyecto?.id === pid)
+  // Proyectos con más tareas de la persona primero, para dar protagonismo a su trabajo.
+  const ordenados = [...proyectos].sort((a, b) => tareasDe(b.id).length - tareasDe(a.id).length)
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
-      {/* Cabecera de la persona */}
+      {/* Cabecera */}
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
           <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -53,7 +81,7 @@ export function Persona() {
         </div>
       </Card>
 
-      {/* KPIs de la persona */}
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Kpi icon="folder" label="Proyectos" value={kpis.proyectos} sub={kpis.proyectosLidera > 0 ? `lidera ${kpis.proyectosLidera}` : 'participa'} tone="blue" />
         <Kpi icon="checkbox" label="Tareas abiertas" value={kpis.tareasAbiertas} sub="asignadas" tone="violet" />
@@ -62,33 +90,19 @@ export function Persona() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <div className="xl:col-span-2 space-y-5">
-          <Card title="Proyectos que lleva" pad={false}>
-            <div className="px-2 py-1.5">
-              {lidera.length > 0 && (
-                <>
-                  <div className="px-3 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Como responsable</div>
-                  {lidera.map((p) => <ProyectoRow key={p.id} p={p} />)}
-                </>
-              )}
-              {participa.length > 0 && (
-                <>
-                  <div className="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Participa</div>
-                  {participa.map((p) => <ProyectoRow key={p.id} p={p} />)}
-                </>
-              )}
-              {proyectos.length === 0 && <p className="px-3 py-6 text-sm text-zinc-400 text-center">No participa en ningún proyecto.</p>}
-            </div>
-          </Card>
-
-          <Card title="Sus tareas" pad={false} action={<span className="text-xs text-zinc-400">por prioridad</span>}>
-            <div className="px-2 py-1.5">
-              {tareas.map((t) => <TareaRow key={t.id} t={t} />)}
-              {tareas.length === 0 && <p className="px-3 py-6 text-sm text-zinc-400 text-center">Sin tareas abiertas.</p>}
-            </div>
-          </Card>
+        {/* Protagonista: trabajo de la persona, tareas anidadas por proyecto */}
+        <div className="xl:col-span-2 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">Su trabajo</h3>
+            <span className="text-xs text-zinc-400">{kpis.tareasAbiertas} tareas en {proyectos.length} proyectos</span>
+          </div>
+          {ordenados.map((p) => <ProyectoConTareas key={p.id} p={p} tareas={tareasDe(p.id)} />)}
+          {proyectos.length === 0 && (
+            <Card><p className="py-6 text-sm text-zinc-400 text-center">No participa en ningún proyecto.</p></Card>
+          )}
         </div>
 
+        {/* Lateral: bloqueos */}
         <div className="space-y-5">
           <Card title="Bloqueos que le afectan" action={bloqueos.length > 0 && <span className="font-mono text-xs text-red-500 bg-red-50 dark:bg-red-500/15 px-1.5 rounded">{bloqueos.length}</span>}>
             <div className="space-y-2.5">
