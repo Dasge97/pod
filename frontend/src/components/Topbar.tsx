@@ -4,11 +4,15 @@ import { useUi } from '../stores/ui'
 
 export function Topbar() {
   const navigate = useNavigate()
-  const { header } = useUi()
+  const { header, toggleSidebar } = useUi()
   const { title, sub, crumbs } = header
 
   return (
-    <header className="h-14 shrink-0 flex items-center gap-4 px-6 border-b border-zinc-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur sticky top-0 z-10">
+    <header className="h-14 shrink-0 flex items-center gap-3 px-4 sm:px-6 border-b border-zinc-200/80 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur sticky top-0 z-10">
+      <button onClick={toggleSidebar} title="Mostrar/ocultar menú"
+        className="w-9 h-9 -ml-1 rounded-lg flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition shrink-0">
+        <Icon name="menu" className="w-5 h-5" />
+      </button>
       <div className="min-w-0 flex-1">
         {crumbs ? (
           <div className="flex items-center gap-1.5 text-sm">

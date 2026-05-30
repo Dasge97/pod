@@ -8,10 +8,16 @@ interface UiState {
   toggleTheme: () => void
   header: PageHeader
   setHeader: (h: PageHeader) => void
+  sidebarOpen: boolean
+  toggleSidebar: () => void
+  setSidebarOpen: (open: boolean) => void
 }
 
 const inicial = (localStorage.getItem('pod_theme') as 'light' | 'dark') || 'light'
 document.documentElement.classList.toggle('dark', inicial === 'dark')
+
+// Abierto por defecto en escritorio, oculto en pantallas pequeñas.
+const sidebarInicial = typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
 
 export const useUi = create<UiState>((set) => ({
   theme: inicial,
@@ -24,4 +30,7 @@ export const useUi = create<UiState>((set) => ({
     }),
   header: {},
   setHeader: (header) => set({ header }),
+  sidebarOpen: sidebarInicial,
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+  setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
 }))

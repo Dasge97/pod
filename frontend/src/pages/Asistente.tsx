@@ -253,7 +253,7 @@ export function Asistente() {
         </Card>
       </div>
 
-      <div className="fixed bottom-0 left-60 right-0 border-t border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur px-6 py-3 z-20">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur px-6 py-3 z-20">
         <div className="max-w-[1100px] mx-auto flex items-center gap-3">
           <Icon name="sparkles" className="w-4 h-4 text-amber-500 shrink-0" />
           <span className="text-[12px] text-zinc-500 dark:text-zinc-400 flex-1 hidden sm:block">Al confirmar se creará el proyecto con {totalTareas} tareas ({totalHoras} h estimadas).</span>

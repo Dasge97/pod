@@ -29,6 +29,7 @@ const ICON_PATHS: Record<string, string> = {
   logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   edit: 'M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3ZM13.5 6.5l3 3',
   doc: 'M9 13h6M9 17h6M9 9h2M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5ZM14 3v5h5',
+  menu: 'M4 6h16M4 12h16M4 18h16',
 }
 
 export function Icon({ name, className }: { name: string; className?: string }) {

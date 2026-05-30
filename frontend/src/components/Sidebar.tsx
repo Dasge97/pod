@@ -29,11 +29,13 @@ function NavItem({ icon, label, active, badge, onClick }: { icon: string; label:
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useUi()
+
+  const ir = (path: string) => { navigate(path); onNavigate?.() }
 
   const { data: bloqueos } = useQuery({
     queryKey: ['blockers', 'activos'],
@@ -52,13 +54,13 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-0.5">
-          <NavItem icon="home" label="Mi panel" active={pathname === '/'} onClick={() => navigate('/')} />
-          <NavItem icon="layers" label="Departamento" active={en('/departamento') || en('/persona')} onClick={() => navigate('/departamento')} />
-          <NavItem icon="trending" label="Comercial" active={en('/comercial')} onClick={() => navigate('/comercial')} />
-          <NavItem icon="folder" label="Proyectos" active={en('/proyecto')} onClick={() => navigate('/proyectos')} />
-          <NavItem icon="file" label="Oportunidades" active={en('/oportunidad')} onClick={() => navigate('/oportunidades')} />
-          <NavItem icon="alert" label="Bloqueos" active={en('/bloqueos')} badge={bloqueosActivos} onClick={() => navigate('/bloqueos')} />
-          <NavItem icon="sparkles" label="Asistente IA" active={en('/asistente')} onClick={() => navigate('/asistente')} />
+          <NavItem icon="home" label="Mi panel" active={pathname === '/'} onClick={() => ir('/')} />
+          <NavItem icon="layers" label="Departamento" active={en('/departamento') || en('/persona')} onClick={() => ir('/departamento')} />
+          <NavItem icon="trending" label="Comercial" active={en('/comercial')} onClick={() => ir('/comercial')} />
+          <NavItem icon="folder" label="Proyectos" active={en('/proyecto')} onClick={() => ir('/proyectos')} />
+          <NavItem icon="file" label="Oportunidades" active={en('/oportunidad')} onClick={() => ir('/oportunidades')} />
+          <NavItem icon="alert" label="Bloqueos" active={en('/bloqueos')} badge={bloqueosActivos} onClick={() => ir('/bloqueos')} />
+          <NavItem icon="sparkles" label="Asistente IA" active={en('/asistente')} onClick={() => ir('/asistente')} />
         </div>
       </nav>
 
