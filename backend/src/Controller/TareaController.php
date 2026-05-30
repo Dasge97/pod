@@ -15,6 +15,7 @@ use App\Repository\ProyectoRepository;
 use App\Repository\ProyectoUsuarioRepository;
 use App\Repository\UsuarioRepository;
 use App\Service\ActivityLogger;
+use App\Service\Notificador;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,6 +33,7 @@ class TareaController extends AbstractController
         private ActividadRepository $actividad,
         private Presenter $presenter,
         private ActivityLogger $logger,
+        private Notificador $notificador,
         private EntityManagerInterface $em,
     ) {
     }
@@ -85,6 +87,10 @@ class TareaController extends AbstractController
         $this->logger->log(TipoActividad::TareaCreada, $this->getUser(), 'creó la tarea', $tarea->getTitulo(), $proyecto);
         $this->em->flush();
 
+        if ($tarea->getAsignado()) {
+            $this->notificador->notificar($tarea->getAsignado(), $this->getUser(), 'te asignó la tarea «'.$tarea->getTitulo().'»', 'tarea', '/proyecto/'.$proyecto->getId());
+        }
+
         return $this->json($this->presenter->tarea($tarea), 201);
     }
 
@@ -108,14 +114,25 @@ class TareaController extends AbstractController
         $this->asegurarParticipacion($tarea->getProyecto(), $tarea->getAsignado());
 
         $fin = EstadoTarea::Finalizada;
+        $completadaAhora = false;
         if ($estadoPrevio !== $fin && $tarea->getEstado() === $fin) {
             $tarea->setFechaFinalizacion(new \DateTimeImmutable());
             $this->logger->log(TipoActividad::TareaCompletada, $this->getUser(), 'completó la tarea', $tarea->getTitulo(), $tarea->getProyecto(), $tarea);
+            $completadaAhora = true;
         } elseif ($estadoPrevio === $fin && $tarea->getEstado() !== $fin) {
             $tarea->setFechaFinalizacion(null);
             $this->logger->log(TipoActividad::TareaReabierta, $this->getUser(), 'reabrió la tarea', $tarea->getTitulo(), $tarea->getProyecto(), $tarea);
         }
+        $reasignada = $tarea->getAsignado() !== null && $tarea->getAsignado() !== $asignadoPrevio;
         $this->em->flush();
+
+        $link = $tarea->getProyecto() ? '/proyecto/'.$tarea->getProyecto()->getId() : null;
+        if ($reasignada) {
+            $this->notificador->notificar($tarea->getAsignado(), $this->getUser(), 'te asignó la tarea «'.$tarea->getTitulo().'»', 'tarea', $link);
+        }
+        if ($completadaAhora && $tarea->getProyecto()?->getResponsable()) {
+            $this->notificador->notificar($tarea->getProyecto()->getResponsable(), $this->getUser(), 'completó la tarea «'.$tarea->getTitulo().'»', 'tarea', $link);
+        }
 
         return $this->json($this->presenter->tarea($tarea));
     }

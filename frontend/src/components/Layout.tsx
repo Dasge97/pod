@@ -4,11 +4,13 @@ import { Topbar } from './Topbar'
 import { TareaDetalleModal } from './TareaDetalleModal'
 import { useAuth } from '../stores/auth'
 import { useUi } from '../stores/ui'
+import { useRealtimeNotificaciones } from '../lib/useRealtimeNotificaciones'
 import { cn } from '../lib/ui'
 
 export function Layout() {
   const { user, token } = useAuth()
   const { sidebarOpen, setSidebarOpen } = useUi()
+  useRealtimeNotificaciones()
 
   // Sin token no hay sesión; al login.
   if (!token) return <Navigate to="/login" replace />

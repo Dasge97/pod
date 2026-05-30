@@ -9,15 +9,18 @@ Pasos para levantar la aplicación completa en local (backend Symfony + MySQL + 
 - Docker (para MySQL) — o un MySQL 8 propio
 - OpenSSL (para las claves JWT)
 
-## 1. Base de datos (Docker)
+## 1. Servicios (Docker)
 
 Desde la raíz del repositorio:
 
 ```bash
-docker compose up -d db adminer
+docker compose up -d
 ```
 
-MySQL queda en `127.0.0.1:3306` (base `pod`, usuario `pod`, contraseña `pod`). Adminer en http://localhost:8081.
+Levanta:
+- **MySQL** en `127.0.0.1:3306` (base `pod`, usuario `pod`, contraseña `pod`).
+- **Adminer** en http://localhost:8081.
+- **Hub de Mercure** en `127.0.0.1:3000` (notificaciones en tiempo real vía Server-Sent Events).
 
 ## 2. Backend (Symfony)
 
@@ -82,6 +85,17 @@ Abre **http://localhost:5173**. Vite proxia `/api` al backend en `:8000` (sin CO
 
 - Tras `app:init`: **admin@pod.dev** · contraseña **admin** (cámbiala al entrar).
 - Tras `app:seed` (demo): **marta@pod.dev** · contraseña **pod** (todos los usuarios usan `pod`).
+
+## Notificaciones en tiempo real
+
+Las notificaciones (asignación de tareas, completado, bloqueos, comentarios, etc.) se
+persisten y se entregan **en directo** a la campana mediante **Mercure** (Server-Sent
+Events) + **Symfony Messenger**:
+
+- El hub de Mercure se levanta con `docker compose up -d` (servicio `mercure`, puerto 3000).
+- El despacho de notificaciones usa Messenger en modo **síncrono** (no requiere worker).
+  Para procesarlas en segundo plano, configura un transport async en
+  `config/packages/messenger.yaml` y ejecuta `php bin/console messenger:consume async`.
 
 ## IA (opcional)
 

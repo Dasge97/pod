@@ -3,8 +3,39 @@ import { api } from './client'
 import { toast } from '../stores/toast'
 import type {
   DashboardMe, DashboardDepartment, DashboardSales,
-  ProyectoLite, ProyectoDetalle, Tarea, Bloqueo, Participante, Actividad, Oportunidad, Usuario, Borrador, PersonaOverview,
+  ProyectoLite, ProyectoDetalle, Tarea, Bloqueo, Participante, Actividad, Oportunidad, Usuario, Borrador, PersonaOverview, Notificacion,
 } from '../types'
+
+/* ---------- Notificaciones ---------- */
+export const useNotificaciones = () =>
+  useQuery({
+    queryKey: ['notificaciones'],
+    queryFn: async () => (await api.get<{ notificaciones: Notificacion[]; noLeidas: number }>('/notifications')).data,
+    refetchInterval: 60_000,
+  })
+
+export const useNotificacionesConfig = () =>
+  useQuery({
+    queryKey: ['notificaciones', 'config'],
+    queryFn: async () => (await api.get<{ mercureUrl: string; topic: string }>('/notifications/config')).data,
+    staleTime: Infinity,
+  })
+
+export const useMarcarLeidas = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => (await api.post('/notifications/read-all')).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notificaciones'] }),
+  })
+}
+
+export const useMarcarLeida = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => (await api.post(`/notifications/${id}/read`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notificaciones'] }),
+  })
+}
 
 /* ---------- Dashboards ---------- */
 export const useDashboardMe = () =>

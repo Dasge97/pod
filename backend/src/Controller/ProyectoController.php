@@ -15,6 +15,7 @@ use App\Repository\ProyectoUsuarioRepository;
 use App\Repository\TareaRepository;
 use App\Repository\UsuarioRepository;
 use App\Service\ActivityLogger;
+use App\Service\Notificador;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,6 +35,7 @@ class ProyectoController extends AbstractController
         private UsuarioRepository $usuarios,
         private Presenter $presenter,
         private ActivityLogger $logger,
+        private Notificador $notificador,
         private EntityManagerInterface $em,
     ) {
     }
@@ -136,6 +138,10 @@ class ProyectoController extends AbstractController
         }
         $this->em->flush();
 
+        if (!$existente) {
+            $this->notificador->notificar($usuario, $this->getUser(), 'te añadió al proyecto «'.$proyecto->getNombre().'»', 'proyecto', '/proyecto/'.$proyecto->getId());
+        }
+
         return $this->json($this->presenter->participante($pu), $existente ? 200 : 201);
     }
 
@@ -168,6 +174,10 @@ class ProyectoController extends AbstractController
         }
         $act = $this->logger->log(TipoActividad::Comentario, $this->getUser(), 'comentó:', $texto, $proyecto);
         $this->em->flush();
+
+        if ($proyecto->getResponsable()) {
+            $this->notificador->notificar($proyecto->getResponsable(), $this->getUser(), 'comentó en «'.$proyecto->getNombre().'»', 'comentario', '/proyecto/'.$proyecto->getId());
+        }
 
         return $this->json($this->presenter->actividad($act), 201);
     }

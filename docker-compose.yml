@@ -27,5 +27,22 @@ services:
     ports:
       - "8081:8080"
 
+  # Hub Mercure para notificaciones en tiempo real (Server-Sent Events).
+  mercure:
+    image: dunglas/mercure
+    container_name: pod-mercure
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ':3000'
+      MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
+      MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
+      # Dev: permite suscriptores anónimos y CORS desde el frontend.
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins http://localhost:5173 http://127.0.0.1:5173
+        anonymous
+        publish_origins *
+    ports:
+      - "3000:3000"
+
 volumes:
   pod_db_data:

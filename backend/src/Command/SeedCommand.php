@@ -41,10 +41,10 @@ class SeedCommand extends Command
 
         // Limpieza (orden por dependencias) + reinicio de IDs para que sean predecibles (1..N).
         $conn = $this->em->getConnection();
-        foreach (['App\Entity\Actividad', 'App\Entity\Bloqueo', 'App\Entity\Tarea', 'App\Entity\ProyectoUsuario', 'App\Entity\Proyecto', 'App\Entity\Oportunidad', 'App\Entity\Usuario'] as $clase) {
+        foreach (['App\Entity\Notificacion', 'App\Entity\Actividad', 'App\Entity\Bloqueo', 'App\Entity\Tarea', 'App\Entity\ProyectoUsuario', 'App\Entity\Proyecto', 'App\Entity\Oportunidad', 'App\Entity\Usuario'] as $clase) {
             $this->em->createQuery("DELETE FROM $clase")->execute();
         }
-        foreach (['actividad', 'bloqueo', 'tarea', 'proyecto_usuario', 'proyecto', 'oportunidad', 'usuario'] as $tabla) {
+        foreach (['notificacion', 'actividad', 'bloqueo', 'tarea', 'proyecto_usuario', 'proyecto', 'oportunidad', 'usuario'] as $tabla) {
             $conn->executeStatement("ALTER TABLE $tabla AUTO_INCREMENT = 1");
         }
 

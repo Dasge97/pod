@@ -36,11 +36,11 @@ class InitCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         // Vaciar todo y reiniciar IDs.
-        foreach (['App\Entity\Actividad', 'App\Entity\Bloqueo', 'App\Entity\Tarea', 'App\Entity\ProyectoUsuario', 'App\Entity\Proyecto', 'App\Entity\Oportunidad', 'App\Entity\Usuario'] as $clase) {
+        foreach (['App\Entity\Notificacion', 'App\Entity\Actividad', 'App\Entity\Bloqueo', 'App\Entity\Tarea', 'App\Entity\ProyectoUsuario', 'App\Entity\Proyecto', 'App\Entity\Oportunidad', 'App\Entity\Usuario'] as $clase) {
             $this->em->createQuery("DELETE FROM $clase")->execute();
         }
         $conn = $this->em->getConnection();
-        foreach (['actividad', 'bloqueo', 'tarea', 'proyecto_usuario', 'proyecto', 'oportunidad', 'usuario'] as $tabla) {
+        foreach (['notificacion', 'actividad', 'bloqueo', 'tarea', 'proyecto_usuario', 'proyecto', 'oportunidad', 'usuario'] as $tabla) {
             $conn->executeStatement("ALTER TABLE $tabla AUTO_INCREMENT = 1");
         }
 

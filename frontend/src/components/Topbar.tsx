@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from './Icon'
+import { Campana } from './Campana'
 import { NuevaTareaModal } from './NuevaTareaModal'
 import { useProyectos, useUsuarios } from '../api/hooks'
 import { useAuth } from '../stores/auth'
@@ -54,10 +55,7 @@ export function Topbar() {
           className="flex items-center gap-1.5 h-9 px-3 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition shrink-0">
           <Icon name="plus" className="w-4 h-4" /><span className="hidden sm:inline">Nueva tarea</span>
         </button>
-        <button className="relative w-9 h-9 rounded-lg flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition shrink-0">
-          <Icon name="bell" className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-zinc-900" />
-        </button>
+        <Campana />
       </header>
 
       <NuevaTareaModal

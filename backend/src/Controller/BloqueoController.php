@@ -10,6 +10,7 @@ use App\Repository\BloqueoRepository;
 use App\Repository\ProyectoRepository;
 use App\Repository\TareaRepository;
 use App\Service\ActivityLogger;
+use App\Service\Notificador;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,6 +27,7 @@ class BloqueoController extends AbstractController
         private TareaRepository $tareas,
         private Presenter $presenter,
         private ActivityLogger $logger,
+        private Notificador $notificador,
         private EntityManagerInterface $em,
     ) {
     }
@@ -67,6 +69,10 @@ class BloqueoController extends AbstractController
         $this->em->persist($bloqueo);
         $this->logger->log(TipoActividad::BloqueoCreado, $this->getUser(), 'abrió un bloqueo en', $bloqueo->getTitulo(), $proyecto);
         $this->em->flush();
+
+        if ($proyecto->getResponsable()) {
+            $this->notificador->notificar($proyecto->getResponsable(), $this->getUser(), 'registró un bloqueo en «'.$proyecto->getNombre().'»', 'bloqueo', '/proyecto/'.$proyecto->getId());
+        }
 
         return $this->json($this->presenter->bloqueo($bloqueo), 201);
     }

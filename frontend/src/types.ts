@@ -119,6 +119,17 @@ export interface Participante {
   rolLabel: string
 }
 
+export interface NotificacionAutor { nombre: string; iniciales: string; color: string }
+export interface Notificacion {
+  id: number
+  texto: string
+  tipo: FamiliaActividad | string
+  link: string | null
+  leida: boolean
+  fecha: string
+  autor: NotificacionAutor | null
+}
+
 export interface DashboardMe {
   usuario: Usuario
   kpis: {
