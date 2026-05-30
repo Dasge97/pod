@@ -8,14 +8,15 @@ build/
 out/
 *.log
 
-# Entornos y secretos
-.env
+# Entornos y secretos (el .env de Symfony SÍ se versiona: solo contiene defaults no secretos)
 .env.local
 .env.*.local
+!backend/.env
 
 # Symfony
 backend/var/
 backend/vendor/
+backend/composer.phar
 backend/.env.local
 backend/config/jwt/*.pem
 

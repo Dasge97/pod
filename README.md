@@ -41,17 +41,33 @@ pod/
 └── docs/       # documentación
 ```
 
+## Puesta en marcha
+
+Guía completa en [docs/arranque.md](docs/arranque.md). Resumen:
+
+```bash
+docker compose up -d db                 # MySQL
+cd backend && composer install
+php bin/console lexik:jwt:generate-keypair --overwrite
+php bin/console doctrine:migrations:migrate --no-interaction
+php bin/console app:seed
+php -S 127.0.0.1:8000 -t public public/index.php   # backend
+cd ../frontend && npm install && npm run dev        # frontend en :5173
+```
+
+Acceso demo: **marta@pod.dev** / **pod**.
+
 ## Documentación
 
 - [Especificación funcional](docs/spec.md) — qué es y qué resuelve.
 - [Arquitectura técnica](docs/arquitectura.md) — stack, estructura, decisiones.
 - [Modelo de datos](docs/modelo-datos.md) — entidades, relaciones, enums.
 - [Contrato de API](docs/api.md) — endpoints REST.
+- [Puesta en marcha](docs/arranque.md) — levantar el proyecto en local.
 - [Prompt de diseño](docs/prompt-diseno.md) — prompt para Claude design.
-- [Plan de construcción](docs/construccion.md) — fases para construir la app.
+- [Plan de construcción](docs/construccion.md) — fases de construcción.
 
 ## Estado
 
-En fase de especificación y diseño. La documentación está completa; el siguiente paso es
-generar el diseño en [`design/`](design/) y construir la aplicación siguiendo
-[docs/construccion.md](docs/construccion.md).
+**Implementada y funcionando end-to-end.** Backend Symfony (API REST + JWT + IA), base de
+datos MySQL con datos de demostración, y frontend React conectado a la API real (sin mocks).
