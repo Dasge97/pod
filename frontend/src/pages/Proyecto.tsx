@@ -1,12 +1,17 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useProyecto, useProyectoTareas, useProyectoBloqueos, useProyectoMiembros, useProyectoActividad, useResolverBloqueo } from '../api/hooks'
+import { useProyecto, useProyectoTareas, useProyectoBloqueos, useProyectoMiembros, useProyectoActividad, useResolverBloqueo, useUpdateProyecto, useCrearTarea, useUsuarios } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
 import { Card, EstadoBadge, PrioridadBadge, Badge, Avatar, Progress } from '../components/ui'
 import { TareaRow } from '../components/rows'
+import { Modal, Field, fieldCls } from '../components/Modal'
 import { Icon } from '../components/Icon'
 import { cn, TONES, barTone, ROL_PART_TONE, type Tone } from '../lib/ui'
 import { fmtFechaCorta, hace } from '../lib/format'
 import { Cargando } from './Personal'
+
+const ESTADOS_PROYECTO: [string, string][] = [['pendiente', 'Pendiente'], ['progreso', 'En progreso'], ['bloqueado', 'Bloqueado'], ['revision', 'En revisión'], ['finalizado', 'Finalizado']]
+const PRIORIDADES: [string, string][] = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta'], ['critica', 'Crítica']]
 
 function DateBox({ label, value, icon, tone = 'zinc' }: { label: string; value: string; icon: string; tone?: Tone }) {
   return (
@@ -29,6 +34,13 @@ export function Proyecto() {
   const { data: miembros = [] } = useProyectoMiembros(pid)
   const { data: actividad = [] } = useProyectoActividad(pid)
   const resolver = useResolverBloqueo()
+  const actualizar = useUpdateProyecto()
+  const crearTarea = useCrearTarea()
+  const { data: usuarios = [] } = useUsuarios()
+  const [editOpen, setEditOpen] = useState(false)
+  const [tareaOpen, setTareaOpen] = useState(false)
+  const [form, setForm] = useState({ nombre: '', descripcion: '', estado: 'pendiente', prioridad: 'media', progreso: 0, responsable: '' as number | '', fechaInicio: '', fechaFinEstimada: '', fechaFinReal: '' })
+  const [tarea, setTarea] = useState({ titulo: '', asignado: '' as number | '', prioridad: 'media', estimacionHoras: '' as number | '', fechaLimite: '' })
 
   useHeader({ crumbs: [{ label: 'Departamento', to: '/departamento' }, { label: p?.nombre ?? '…' }] }, [p?.nombre])
 
@@ -36,6 +48,34 @@ export function Proyecto() {
 
   const activos = bloqueos.filter((b) => !b.resuelto)
   const finalizadas = tareas.filter((t) => t.estado === 'finalizada').length
+
+  function abrirEdicion() {
+    setForm({
+      nombre: p!.nombre, descripcion: p!.descripcion ?? '', estado: p!.estado, prioridad: p!.prioridad,
+      progreso: p!.progreso, responsable: p!.responsable?.id ?? '',
+      fechaInicio: p!.fechaInicio ?? '', fechaFinEstimada: p!.fechaFinEstimada ?? '', fechaFinReal: p!.fechaFinReal ?? '',
+    })
+    setEditOpen(true)
+  }
+
+  function guardarEdicion() {
+    actualizar.mutate({ id: pid, cambios: {
+      nombre: form.nombre, descripcion: form.descripcion || null,
+      estado: form.estado, prioridad: form.prioridad, progreso: Number(form.progreso),
+      responsable: form.responsable || undefined,
+      fechaInicio: form.fechaInicio || null, fechaFinEstimada: form.fechaFinEstimada || null, fechaFinReal: form.fechaFinReal || null,
+    } }, { onSuccess: () => setEditOpen(false) })
+  }
+
+  function guardarTarea() {
+    if (!tarea.titulo.trim()) return
+    crearTarea.mutate({
+      proyecto: pid, titulo: tarea.titulo, prioridad: tarea.prioridad,
+      asignado: tarea.asignado || null,
+      estimacionHoras: tarea.estimacionHoras === '' ? null : Number(tarea.estimacionHoras),
+      fechaLimite: tarea.fechaLimite || null,
+    }, { onSuccess: () => { setTareaOpen(false); setTarea({ titulo: '', asignado: '', prioridad: 'media', estimacionHoras: '', fechaLimite: '' }) } })
+  }
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
@@ -60,8 +100,8 @@ export function Proyecto() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition flex items-center gap-1.5"><Icon name="edit" className="w-4 h-4" />Editar</button>
-            <button className="h-9 px-3 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition flex items-center gap-1.5"><Icon name="plus" className="w-4 h-4" />Nueva tarea</button>
+            <button onClick={abrirEdicion} className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition flex items-center gap-1.5"><Icon name="edit" className="w-4 h-4" />Editar</button>
+            <button onClick={() => setTareaOpen(true)} className="h-9 px-3 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition flex items-center gap-1.5"><Icon name="plus" className="w-4 h-4" />Nueva tarea</button>
           </div>
         </div>
 
@@ -150,6 +190,50 @@ export function Proyecto() {
           </Card>
         </div>
       </div>
+
+      {/* Modal: editar proyecto */}
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Editar proyecto"
+        footer={<>
+          <button onClick={() => setEditOpen(false)} className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Cancelar</button>
+          <button onClick={guardarEdicion} disabled={actualizar.isPending} className="h-9 px-4 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition disabled:opacity-50">Guardar</button>
+        </>}>
+        <div className="space-y-4">
+          <Field label="Nombre"><input className={fieldCls} value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} /></Field>
+          <Field label="Descripción"><textarea className={cn(fieldCls, 'h-auto py-2 resize-none')} rows={2} value={form.descripcion} onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Estado"><select className={fieldCls} value={form.estado} onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value }))}>{ESTADOS_PROYECTO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+            <Field label="Prioridad"><select className={fieldCls} value={form.prioridad} onChange={(e) => setForm((f) => ({ ...f, prioridad: e.target.value }))}>{PRIORIDADES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={`Progreso (${form.progreso}%)`}><input type="range" min={0} max={100} className="w-full accent-emerald-500" value={form.progreso} onChange={(e) => setForm((f) => ({ ...f, progreso: Number(e.target.value) }))} /></Field>
+            <Field label="Responsable"><select className={fieldCls} value={form.responsable} onChange={(e) => setForm((f) => ({ ...f, responsable: e.target.value ? Number(e.target.value) : '' }))}>{usuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}</select></Field>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Inicio"><input type="date" className={fieldCls} value={form.fechaInicio} onChange={(e) => setForm((f) => ({ ...f, fechaInicio: e.target.value }))} /></Field>
+            <Field label="Fin estimada"><input type="date" className={fieldCls} value={form.fechaFinEstimada} onChange={(e) => setForm((f) => ({ ...f, fechaFinEstimada: e.target.value }))} /></Field>
+            <Field label="Fin real"><input type="date" className={fieldCls} value={form.fechaFinReal} onChange={(e) => setForm((f) => ({ ...f, fechaFinReal: e.target.value }))} /></Field>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: nueva tarea */}
+      <Modal open={tareaOpen} onClose={() => setTareaOpen(false)} title="Nueva tarea"
+        footer={<>
+          <button onClick={() => setTareaOpen(false)} className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Cancelar</button>
+          <button onClick={guardarTarea} disabled={crearTarea.isPending || !tarea.titulo.trim()} className="h-9 px-4 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition disabled:opacity-50">Crear tarea</button>
+        </>}>
+        <div className="space-y-4">
+          <Field label="Título"><input className={fieldCls} autoFocus value={tarea.titulo} onChange={(e) => setTarea((t) => ({ ...t, titulo: e.target.value }))} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Asignado"><select className={fieldCls} value={tarea.asignado} onChange={(e) => setTarea((t) => ({ ...t, asignado: e.target.value ? Number(e.target.value) : '' }))}><option value="">Sin asignar</option>{usuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}</select></Field>
+            <Field label="Prioridad"><select className={fieldCls} value={tarea.prioridad} onChange={(e) => setTarea((t) => ({ ...t, prioridad: e.target.value }))}>{PRIORIDADES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Estimación (horas)"><input type="number" min={0} className={fieldCls} value={tarea.estimacionHoras} onChange={(e) => setTarea((t) => ({ ...t, estimacionHoras: e.target.value === '' ? '' : Number(e.target.value) }))} /></Field>
+            <Field label="Fecha límite"><input type="date" className={fieldCls} value={tarea.fechaLimite} onChange={(e) => setTarea((t) => ({ ...t, fechaLimite: e.target.value }))} /></Field>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

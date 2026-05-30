@@ -136,6 +136,10 @@ class Presenter
 
     public function oportunidad(Oportunidad $o): array
     {
+        // Collection::first() devuelve false (no null) cuando está vacía, así que
+        // no se puede encadenar con ?-> directamente.
+        $proyectoGenerado = $o->getProyectosGenerados()->first() ?: null;
+
         return [
             'id' => $o->getId(),
             'nombre' => $o->getNombre(),
@@ -149,7 +153,7 @@ class Presenter
             'fechaEnvio' => $this->fecha($o->getFechaEnvio()),
             'diasEnvio' => $o->getDiasDesdeEnvio(),
             'diasSinSeguimiento' => $o->getDiasSinSeguimiento(),
-            'proyectoGeneradoId' => $o->getProyectosGenerados()->first()?->getId() ?: null,
+            'proyectoGeneradoId' => $proyectoGenerado?->getId(),
         ];
     }
 
