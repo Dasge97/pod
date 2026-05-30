@@ -40,10 +40,23 @@ php bin/console lexik:jwt:generate-keypair --overwrite
 > ```
 > (usa el valor de `JWT_PASSPHRASE` de `.env`).
 
-Crea el esquema y carga datos de demostración:
+Crea el esquema:
 
 ```bash
 php bin/console doctrine:migrations:migrate --no-interaction
+```
+
+Inicializa la base de datos. Empezar **limpio** (BD vacía + un administrador):
+
+```bash
+php bin/console app:init
+# o con tus credenciales:
+php bin/console app:init "tu@email" "tu-clave" "Tu Nombre"
+```
+
+Si en su lugar prefieres **datos de demostración** (proyectos, oportunidades, equipo de ejemplo):
+
+```bash
 php bin/console app:seed
 ```
 
@@ -67,8 +80,8 @@ Abre **http://localhost:5173**. Vite proxia `/api` al backend en `:8000` (sin CO
 
 ## 4. Acceso
 
-Usuario demo: **marta@pod.dev** · contraseña **pod**
-(todos los usuarios del seed comparten la contraseña `pod`).
+- Tras `app:init`: **admin@pod.dev** · contraseña **admin** (cámbiala al entrar).
+- Tras `app:seed` (demo): **marta@pod.dev** · contraseña **pod** (todos los usuarios usan `pod`).
 
 ## IA (opcional)
 

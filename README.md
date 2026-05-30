@@ -50,12 +50,12 @@ docker compose up -d db                 # MySQL
 cd backend && composer install
 php bin/console lexik:jwt:generate-keypair --overwrite
 php bin/console doctrine:migrations:migrate --no-interaction
-php bin/console app:seed
+php bin/console app:init                            # BD vacía + admin (o app:seed para datos demo)
 php -S 127.0.0.1:8000 -t public public/index.php   # backend
 cd ../frontend && npm install && npm run dev        # frontend en :5173
 ```
 
-Acceso demo: **marta@pod.dev** / **pod**.
+Acceso tras `app:init`: **admin@pod.dev** / **admin** (o **marta@pod.dev** / **pod** si usas `app:seed`).
 
 ## Documentación
 
