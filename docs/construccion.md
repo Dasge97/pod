@@ -13,8 +13,8 @@ Con eso, construir es ejecución guiada por [arquitectura.md](arquitectura.md), 
 
 ## Fase 0 — Entorno
 
-- `docker-compose.yml` con PostgreSQL 16 (y opcionalmente Adminer).
-- Variables de entorno: `DATABASE_URL`, `JWT_*`, `CORS_ALLOW_ORIGIN`, `ANTHROPIC_API_KEY`.
+- `docker-compose.yml` con MySQL 8 (y opcionalmente Adminer/phpMyAdmin).
+- Variables de entorno: `DATABASE_URL`, `JWT_*`, `CORS_ALLOW_ORIGIN`, `AI_PROVIDER` (`openai`|`anthropic`), `OPENAI_API_KEY` y/o `ANTHROPIC_API_KEY`, `AI_MODEL`.
 
 ## Fase 1 — Backend: esqueleto y datos
 
@@ -23,7 +23,7 @@ Con eso, construir es ejecución guiada por [arquitectura.md](arquitectura.md), 
 3. Generar y ejecutar migraciones (`doctrine:migrations`).
 4. `Command` de seed con datos de ejemplo (usuarios de cada rol, proyectos, tareas, oportunidades, actividad) para poder ver los dashboards con datos reales.
 
-**Verificable:** esquema creado y seed cargado en PostgreSQL.
+**Verificable:** esquema creado y seed cargado en MySQL.
 
 ## Fase 2 — Backend: auth
 
@@ -52,8 +52,8 @@ Con eso, construir es ejecución guiada por [arquitectura.md](arquitectura.md), 
 
 ## Fase 5 — Backend: asistente IA
 
-1. `Service` que recibe documento/texto, llama a la **API de Claude** y devuelve el borrador con la forma de [api.md](api.md) (`/api/ai/analyze`).
-2. Extracción de texto de PDF/DOCX antes de enviar a la IA.
+1. `AiClientInterface` en `src/Service/Ai/` con implementaciones `OpenAiClient` y `AnthropicClient`; proveedor seleccionable por `AI_PROVIDER`. El servicio devuelve el borrador con la forma de [api.md](api.md) (`/api/ai/analyze`).
+2. Extracción de texto de PDF/DOCX antes de enviar al proveedor de IA.
 3. `/api/projects/from-draft` crea proyecto + tareas a partir del borrador revisado.
 
 **Verificable:** subir un presupuesto produce un borrador editable; confirmar crea el proyecto real.

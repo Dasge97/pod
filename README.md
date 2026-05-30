@@ -27,7 +27,7 @@ La información generada durante la venta se reutiliza durante la ejecución.
 
 ## Stack
 
-- **Backend:** PHP 8.3 / Symfony 7 · Doctrine ORM + Migrations · PostgreSQL · JWT (Lexik) · API de Claude para la IA.
+- **Backend:** PHP 8.3 / Symfony 7 · Doctrine ORM + Migrations · MySQL 8 · JWT (Lexik) · IA con proveedor configurable (OpenAI o Anthropic).
 - **Frontend:** React + Vite + TypeScript · Tailwind CSS + shadcn/ui · TanStack Query · React Router · Zustand.
 - **Diseño:** Claude design (React + Tailwind + shadcn/ui), portado al frontend.
 

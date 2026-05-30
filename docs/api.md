@@ -99,7 +99,7 @@ Pensados para llenar cada pantalla con una sola petición.
 
 ## Asistente IA: presupuesto → proyecto
 
-Flujo en dos pasos. La IA nunca crea el proyecto: produce un borrador editable que un humano confirma.
+Flujo en dos pasos. La IA nunca crea el proyecto: produce un borrador editable que un humano confirma. El proveedor de IA (OpenAI o Anthropic) es configurable por entorno y transparente para el cliente — ver [Capa de IA](arquitectura.md#capa-de-ia).
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|

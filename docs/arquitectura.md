@@ -8,10 +8,10 @@ Este documento define el stack, la estructura del repositorio y las decisiones t
 
 - **PHP 8.3+ / Symfony 7** — API REST.
 - **Doctrine ORM + Doctrine Migrations** — persistencia y esquema.
-- **PostgreSQL 16** — base de datos.
+- **MySQL 8** — base de datos.
 - **LexikJWTAuthenticationBundle** — autenticación JWT/Bearer.
 - **NelmioCorsBundle** — CORS para el frontend.
-- **API Anthropic (Claude)** — análisis de presupuestos y generación de borradores de proyecto.
+- **Capa de IA con proveedor configurable (OpenAI o Anthropic)** — análisis de presupuestos y generación de borradores de proyecto. Ver [Capa de IA](#capa-de-ia).
 
 Arquitectura clásica de API por carpetas técnicas (ver [Estructura backend](#estructura-backend)). Controladores finos, lógica en servicios, persistencia con Doctrine. Sin arquitectura modular ni Symfony Messenger salvo necesidad real.
 
@@ -90,6 +90,16 @@ frontend/
 - Roles del sistema (Symfony roles): `ROLE_DEVELOPER`, `ROLE_PROJECT_MANAGER`, `ROLE_SALES`, `ROLE_DEPT_MANAGER`, `ROLE_ADMIN`.
 - Autorización de grano fino con **voters** en `src/Security/` (p. ej. "¿puede este usuario gestionar este proyecto?").
 - CORS configurado para el origen del frontend.
+
+## Capa de IA
+
+El análisis de presupuestos no depende de un proveedor concreto: se accede a través de una abstracción para poder usar **OpenAI o Anthropic** de forma intercambiable.
+
+- Interfaz `AiClientInterface` en `src/Service/Ai/` con una operación que recibe el texto del presupuesto y devuelve el borrador estructurado (forma en [api.md](api.md)).
+- Dos implementaciones: `OpenAiClient` y `AnthropicClient`.
+- El proveedor activo se elige por configuración (`AI_PROVIDER=openai|anthropic`) mediante un alias de servicio en `services.yaml`; el resto del código depende solo de la interfaz.
+- Claves por entorno: `OPENAI_API_KEY` y/o `ANTHROPIC_API_KEY`. Modelo por proveedor configurable (`AI_MODEL`).
+- El servicio se encarga de extraer el texto del documento (PDF/DOCX) antes de llamar al proveedor.
 
 ## Decisiones y límites (qué NO hacer)
 
