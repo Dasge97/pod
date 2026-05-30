@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { TareaDetalleModal } from './TareaDetalleModal'
+import { CommandPalette } from './CommandPalette'
 import { useAuth } from '../stores/auth'
 import { useUi } from '../stores/ui'
 import { useRealtimeNotificaciones } from '../lib/useRealtimeNotificaciones'
@@ -51,6 +52,7 @@ export function Layout() {
       </div>
 
       <TareaDetalleModal />
+      <CommandPalette />
     </div>
   )
 }

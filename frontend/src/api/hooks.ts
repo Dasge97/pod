@@ -229,6 +229,18 @@ export const useRemoveMiembro = () => {
   })
 }
 
+export const useCrearOportunidad = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (datos: Record<string, unknown>) => (await api.post<Oportunidad>('/opportunities', datos)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['oportunidades'] })
+      qc.invalidateQueries({ queryKey: ['dashboard', 'sales'] })
+      toast.success('Oportunidad creada')
+    },
+  })
+}
+
 export const useUpdateOportunidad = () => {
   const qc = useQueryClient()
   return useMutation({
@@ -272,8 +284,14 @@ export const useComentarProyecto = () => {
 /* ---------- IA ---------- */
 export const useAnalizarPresupuesto = () =>
   useMutation({
-    mutationFn: async (payload: { texto?: string; oportunidadId?: number }) =>
-      (await api.post<Borrador>('/ai/analyze', payload)).data,
+    mutationFn: async (payload: { texto?: string; oportunidadId?: number; archivo?: File }) => {
+      if (payload.archivo) {
+        const fd = new FormData()
+        fd.append('documento', payload.archivo)
+        return (await api.post<Borrador>('/ai/analyze', fd, { headers: { 'Content-Type': 'multipart/form-data' } })).data
+      }
+      return (await api.post<Borrador>('/ai/analyze', { texto: payload.texto, oportunidadId: payload.oportunidadId })).data
+    },
   })
 
 export const useCrearDesdeBorrador = () => {

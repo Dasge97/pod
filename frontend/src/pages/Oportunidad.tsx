@@ -1,7 +1,10 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useOportunidad, useSeguimiento } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
+import { useAuth } from '../stores/auth'
+import { esComercial } from '../lib/permisos'
+import { OportunidadModal } from '../components/OportunidadModal'
 import { Card, OppBadge, Badge, Avatar } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { cn, type Tone } from '../lib/ui'
@@ -57,6 +60,9 @@ export function Oportunidad() {
   const navigate = useNavigate()
   const { data: o, isLoading } = useOportunidad(oid)
   const seguimiento = useSeguimiento()
+  const { user } = useAuth()
+  const puedeComercial = esComercial(user)
+  const [editOpen, setEditOpen] = useState(false)
 
   useHeader({ crumbs: [{ label: 'Comercial', to: '/comercial' }, { label: o?.cliente ?? '…' }] }, [o?.cliente])
 
@@ -99,6 +105,9 @@ export function Oportunidad() {
             </div>
           </div>
           <div className="text-right shrink-0">
+            {puedeComercial && (
+              <button onClick={() => setEditOpen(true)} className="mb-2 h-8 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition flex items-center gap-1.5 ml-auto"><Icon name="edit" className="w-4 h-4" />Editar</button>
+            )}
             <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Importe</div>
             <div className="font-mono text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{fmtEur(o.importe)}</div>
           </div>
@@ -147,6 +156,8 @@ export function Oportunidad() {
           </Card>
         </div>
       </div>
+
+      <OportunidadModal open={editOpen} onClose={() => setEditOpen(false)} oportunidad={o} />
     </div>
   )
 }

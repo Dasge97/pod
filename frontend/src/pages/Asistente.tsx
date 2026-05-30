@@ -21,7 +21,8 @@ export function Asistente() {
 
   const [step, setStep] = useState<'upload' | 'draft' | 'confirmed'>('upload')
   const [texto, setTexto] = useState('')
-  const [fuente, setFuente] = useState<'oportunidad' | 'texto'>(oportunidadId ? 'oportunidad' : 'texto')
+  const [archivo, setArchivo] = useState<File | null>(null)
+  const [fuente, setFuente] = useState<'oportunidad' | 'texto' | 'archivo'>(oportunidadId ? 'oportunidad' : 'texto')
 
   // Borrador editable
   const [nombre, setNombre] = useState('')
@@ -48,10 +49,11 @@ export function Asistente() {
   }
 
   function lanzar() {
-    analizar.mutate(
-      fuente === 'oportunidad' && oportunidadId ? { oportunidadId } : { texto },
-      { onSuccess: cargarBorrador },
-    )
+    const payload =
+      fuente === 'archivo' && archivo ? { archivo }
+      : fuente === 'oportunidad' && oportunidadId ? { oportunidadId }
+      : { texto }
+    analizar.mutate(payload, { onSuccess: cargarBorrador })
   }
 
   function confirmar() {
@@ -132,11 +134,29 @@ export function Asistente() {
             <button onClick={() => setFuente('texto')} className={cn('flex items-center gap-2 h-9 px-3 rounded-lg text-[13px] font-medium border transition', fuente === 'texto' ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-300' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800')}>
               <Icon name="edit" className="w-4 h-4" />Pegar texto
             </button>
+            <button onClick={() => setFuente('archivo')} className={cn('flex items-center gap-2 h-9 px-3 rounded-lg text-[13px] font-medium border transition', fuente === 'archivo' ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-300' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800')}>
+              <Icon name="upload" className="w-4 h-4" />Subir archivo
+            </button>
           </div>
 
-          {fuente === 'texto' ? (
+          {fuente === 'texto' && (
             <textarea rows={6} value={texto} onChange={(e) => setTexto(e.target.value)} className={cn(inputCls, 'resize-none font-mono')} placeholder="Pega aquí el texto del presupuesto o del correo del cliente…" />
-          ) : (
+          )}
+          {fuente === 'archivo' && (
+            <label className="block rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 hover:border-emerald-300 dark:hover:border-emerald-500/40 transition cursor-pointer p-8 text-center">
+              <input type="file" accept=".pdf,.docx,.txt,.md" className="hidden" onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
+              <Icon name="upload" className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-600" />
+              {archivo ? (
+                <p className="text-[13px] font-medium text-zinc-700 dark:text-zinc-200 mt-2">{archivo.name}</p>
+              ) : (
+                <>
+                  <p className="text-[13px] font-medium text-zinc-700 dark:text-zinc-200 mt-2">Arrastra el documento o haz clic para subir</p>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">PDF, DOCX o texto · hasta 20 MB</p>
+                </>
+              )}
+            </label>
+          )}
+          {fuente === 'oportunidad' && (
             <div className="flex items-center gap-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50/60 dark:bg-zinc-800/40 px-3 py-3">
               <span className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-emerald-500"><Icon name="file" className="w-4 h-4" /></span>
               <div className="min-w-0 flex-1">
@@ -147,11 +167,11 @@ export function Asistente() {
             </div>
           )}
 
-          {analizar.isError && <p className="mt-3 text-[13px] text-red-600 dark:text-red-400">No se pudo analizar. Revisa el texto o la oportunidad.</p>}
+          {analizar.isError && <p className="mt-3 text-[13px] text-red-600 dark:text-red-400">No se pudo analizar. Revisa el texto, el archivo o la oportunidad.</p>}
 
           <div className="mt-5 flex justify-end gap-2">
             <button onClick={() => navigate(-1)} className="h-10 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[14px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Cancelar</button>
-            <button onClick={lanzar} disabled={fuente === 'texto' && texto.trim() === ''} className="h-10 px-4 rounded-lg bg-emerald-500 text-white text-[14px] font-medium hover:bg-emerald-600 transition flex items-center gap-2 disabled:opacity-50"><Icon name="sparkles" className="w-4 h-4" />Generar borrador</button>
+            <button onClick={lanzar} disabled={(fuente === 'texto' && texto.trim() === '') || (fuente === 'archivo' && !archivo)} className="h-10 px-4 rounded-lg bg-emerald-500 text-white text-[14px] font-medium hover:bg-emerald-600 transition flex items-center gap-2 disabled:opacity-50"><Icon name="sparkles" className="w-4 h-4" />Generar borrador</button>
           </div>
         </Card>
       </div>

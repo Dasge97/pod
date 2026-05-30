@@ -7,6 +7,7 @@ import { useProyectos, useUsuarios } from '../api/hooks'
 import { useAuth } from '../stores/auth'
 import { esEncargado } from '../lib/permisos'
 import { useUi } from '../stores/ui'
+import { useCommand } from '../stores/command'
 
 export function Topbar() {
   const navigate = useNavigate()
@@ -14,6 +15,7 @@ export function Topbar() {
   const { title, sub, crumbs } = header
   const { user } = useAuth()
   const esManager = esEncargado(user)
+  const abrirBusqueda = useCommand((s) => s.abrir)
   const [tareaOpen, setTareaOpen] = useState(false)
   const { data: proyectos = [] } = useProyectos()
   const { data: usuarios = [] } = useUsuarios()
@@ -46,11 +48,11 @@ export function Topbar() {
             </div>
           )}
         </div>
-        <div className="hidden md:flex items-center h-9 px-3 gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-400 w-64 bg-zinc-50/50 dark:bg-zinc-800/30">
+        <button onClick={abrirBusqueda} className="hidden md:flex items-center h-9 px-3 gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-400 w-64 bg-zinc-50/50 dark:bg-zinc-800/30 hover:border-zinc-300 dark:hover:border-zinc-700 transition">
           <Icon name="search" className="w-4 h-4" />
           <span className="text-[13px]">Buscar…</span>
           <kbd className="ml-auto font-mono text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-400">⌘K</kbd>
-        </div>
+        </button>
         <button onClick={() => setTareaOpen(true)} title="Nueva tarea"
           className="flex items-center gap-1.5 h-9 px-3 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition shrink-0">
           <Icon name="plus" className="w-4 h-4" /><span className="hidden sm:inline">Nueva tarea</span>

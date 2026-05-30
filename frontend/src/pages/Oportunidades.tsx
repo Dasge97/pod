@@ -5,6 +5,7 @@ import { useAuth } from '../stores/auth'
 import { esComercial } from '../lib/permisos'
 import { Card, Kpi } from '../components/ui'
 import { OppRow } from '../components/rows'
+import { OportunidadModal } from '../components/OportunidadModal'
 import { Icon } from '../components/Icon'
 import { cn } from '../lib/ui'
 import { fmtEur } from '../lib/format'
@@ -12,6 +13,7 @@ import { Cargando } from './Personal'
 
 export function Oportunidades() {
   const [filtro, setFiltro] = useState('abiertas')
+  const [modalOpen, setModalOpen] = useState(false)
   const { data: oportunidades, isLoading } = useOportunidades()
   const { user } = useAuth()
   const puedeComercial = esComercial(user)
@@ -54,7 +56,7 @@ export function Oportunidades() {
               </button>
             ))}
           </div>
-          {puedeComercial && <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"><Icon name="plus" className="w-3.5 h-3.5" />Nueva</button>}
+          {puedeComercial && <button onClick={() => setModalOpen(true)} className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"><Icon name="plus" className="w-3.5 h-3.5" />Nueva</button>}
         </div>
       }>
         <div className="px-2 py-1.5">
@@ -66,6 +68,8 @@ export function Oportunidades() {
           {lista.length === 0 && <p className="px-3 py-10 text-sm text-zinc-400 text-center">No hay oportunidades en este filtro.</p>}
         </div>
       </Card>
+
+      <OportunidadModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   )
 }

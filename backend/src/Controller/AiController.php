@@ -9,6 +9,7 @@ use App\Enum\Prioridad;
 use App\Enum\TipoActividad;
 use App\Repository\OportunidadRepository;
 use App\Service\Ai\ProjectDraftGenerator;
+use App\Service\Ai\TextExtractor;
 use App\Service\ActivityLogger;
 use App\Service\Presenter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,6 +22,7 @@ class AiController extends AbstractController
 {
     public function __construct(
         private ProjectDraftGenerator $generator,
+        private TextExtractor $extractor,
         private OportunidadRepository $oportunidades,
         private Presenter $presenter,
         private ActivityLogger $logger,
@@ -34,10 +36,10 @@ class AiController extends AbstractController
     {
         $texto = '';
 
-        // 1) Archivo subido (multipart)
+        // 1) Archivo subido (multipart): PDF, DOCX o texto.
         $file = $request->files->get('documento');
         if ($file) {
-            $texto = (string) file_get_contents($file->getPathname());
+            $texto = $this->extractor->extraer($file);
         }
 
         // 2) Cuerpo JSON
