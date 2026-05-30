@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Repository\TareaRepository;
 use App\Repository\UsuarioRepository;
+use App\Service\DashboardService;
 use App\Service\Presenter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,6 +17,7 @@ class UsuarioController extends AbstractController
         private UsuarioRepository $usuarios,
         private TareaRepository $tareas,
         private Presenter $presenter,
+        private DashboardService $dashboard,
     ) {
     }
 
@@ -38,5 +40,15 @@ class UsuarioController extends AbstractController
         $data['carga'] = min(100, $abiertas * 14);
 
         return $this->json($data);
+    }
+
+    #[Route('/{id}/overview', name: 'api_users_overview', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function overview(int $id): JsonResponse
+    {
+        $u = $this->usuarios->find($id);
+        if (!$u) {
+            return $this->json(['error' => 'Usuario no encontrado'], 404);
+        }
+        return $this->json($this->dashboard->personaOverview($u));
     }
 }

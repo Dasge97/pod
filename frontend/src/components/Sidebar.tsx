@@ -53,15 +53,11 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-0.5">
-          <div className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Paneles</div>
-          <NavItem icon="home" label="Mi panel" active={en('/') } onClick={() => navigate('/')} />
-          <NavItem icon="layers" label="Departamento" active={en('/departamento')} onClick={() => navigate('/departamento')} />
+          <NavItem icon="home" label="Mi panel" active={en('/')} onClick={() => navigate('/')} />
+          <NavItem icon="layers" label="Departamento" active={en('/departamento') || en('/persona')} onClick={() => navigate('/departamento')} />
           <NavItem icon="trending" label="Comercial" active={en('/comercial')} onClick={() => navigate('/comercial')} />
-        </div>
-        <div className="space-y-0.5">
-          <div className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Operación</div>
           <NavItem icon="folder" label="Proyectos" active={en('/proyecto')} onClick={() => navigate('/departamento')} />
           <NavItem icon="file" label="Oportunidades" active={en('/oportunidad')} onClick={() => navigate('/comercial')} />
           <NavItem icon="alert" label="Bloqueos" active={false} badge={bloqueosActivos} onClick={() => navigate('/departamento')} />

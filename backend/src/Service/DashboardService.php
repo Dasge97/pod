@@ -117,38 +117,116 @@ class DashboardService
             }
         }
 
-        // Carga del equipo
-        $carga = [];
+        // Vencidas por usuario asignado.
+        $vencidasPorUsuario = [];
+        foreach ($vencidas as $t) {
+            if ($t->getAsignado()) {
+                $uid = $t->getAsignado()->getId();
+                $vencidasPorUsuario[$uid] = ($vencidasPorUsuario[$uid] ?? 0) + 1;
+            }
+        }
+        // Bloqueos activos que afectan a cada persona (responsable del proyecto o asignado de la tarea).
+        $bloqueosPorUsuario = [];
+        foreach ($bloqueosActivos as $b) {
+            $afectados = [];
+            if ($b->getProyecto()?->getResponsable()) {
+                $afectados[$b->getProyecto()->getResponsable()->getId()] = true;
+            }
+            if ($b->getTarea()?->getAsignado()) {
+                $afectados[$b->getTarea()->getAsignado()->getId()] = true;
+            }
+            foreach (array_keys($afectados) as $uid) {
+                $bloqueosPorUsuario[$uid] = ($bloqueosPorUsuario[$uid] ?? 0) + 1;
+            }
+        }
+
+        // Equipo (protagonista): una fila por persona, orientada a su carga real.
+        $equipo = [];
         foreach ($this->usuarios->findActivos() as $u) {
             $abiertas = $this->tareas->countAbiertasPorUsuario($u);
-            $nProyectos = count($this->proyectos->findByParticipante($u));
-            $carga[] = [
+            $participa = $this->proyectos->findByParticipante($u);
+            $lidera = count(array_filter($participa, fn (Proyecto $p) => $p->getResponsable()?->getId() === $u->getId()));
+            $carga = min(100, $abiertas * 14);
+            $equipo[] = [
                 'usuario' => $this->presenter->usuario($u),
-                'proyectos' => $nProyectos,
-                'tareas' => $abiertas,
-                'carga' => min(100, $abiertas * 14),
+                'carga' => $carga,
+                'estado' => $carga >= 90 ? 'saturado' : ($carga <= 40 ? 'holgura' : 'ok'),
+                'proyectos' => count($participa),
+                'proyectosLidera' => $lidera,
+                'tareasAbiertas' => $abiertas,
+                'tareasVencidas' => $vencidasPorUsuario[$u->getId()] ?? 0,
+                'bloqueos' => $bloqueosPorUsuario[$u->getId()] ?? 0,
             ];
         }
-        usort($carga, fn ($a, $b) => $b['carga'] <=> $a['carga']);
+        usort($equipo, fn ($a, $b) => $b['carga'] <=> $a['carga']);
 
         return [
-            'kpis' => [
+            // KPIs orientados al equipo (protagonista).
+            'kpisEquipo' => [
+                'personas' => count($equipo),
+                'saturados' => count(array_filter($equipo, fn ($c) => $c['carga'] >= 90)),
+                'tareasVencidas' => count($vencidas),
+                'bloqueosActivos' => count($bloqueosActivos),
+            ],
+            // KPIs de proyectos (sección secundaria).
+            'kpisProyectos' => [
                 'activos' => count($activos),
                 'total' => count($todos),
                 'bloqueados' => count(array_filter($todos, fn (Proyecto $p) => $p->getEstado() === EstadoProyecto::Bloqueado)),
                 'retrasados' => count(array_filter($todos, fn (Proyecto $p) => $p->isRetrasado())),
                 'enRevision' => count(array_filter($todos, fn (Proyecto $p) => $p->getEstado() === EstadoProyecto::Revision)),
                 'finalizados' => count(array_filter($todos, fn (Proyecto $p) => $p->getEstado() === EstadoProyecto::Finalizado)),
-                'tareasVencidas' => count($vencidas),
             ],
+            'equipo' => $equipo,
             'riesgos' => [
                 'sinActividad' => $riesgoSinActividad,
                 'conBloqueos' => $riesgoBloqueos,
                 'conVencidas' => $riesgoVencidas,
             ],
             'proyectos' => array_map(fn (Proyecto $p) => $this->presenter->proyectoLite($p, $this->diasSinActividad($p, $mapaActividad)), array_values($todos)),
-            'carga' => $carga,
             'actividad' => array_map(fn ($a) => $this->presenter->actividad($a), $this->actividad->findFeed([], 15)),
+        ];
+    }
+
+    /** Detalle operativo de una persona: lo que lleva, su carga, tareas y bloqueos. */
+    public function personaOverview(Usuario $u): array
+    {
+        $participa = $this->proyectos->findByParticipante($u);
+        $tareas = $this->tareas->findAbiertasDeUsuario($u);
+        usort($tareas, fn ($a, $b) => $a->getPrioridad()->peso() <=> $b->getPrioridad()->peso());
+
+        // Bloqueos activos que afectan a la persona.
+        $bloqueos = array_filter($this->bloqueos->findActivos(), function ($b) use ($u) {
+            return $b->getProyecto()?->getResponsable()?->getId() === $u->getId()
+                || $b->getTarea()?->getAsignado()?->getId() === $u->getId();
+        });
+
+        $abiertas = count($tareas);
+        $vencidas = count(array_filter($tareas, fn ($t) => $t->isVencida()));
+        $lidera = count(array_filter($participa, fn (Proyecto $p) => $p->getResponsable()?->getId() === $u->getId()));
+        $carga = min(100, $abiertas * 14);
+
+        // Proyectos con el rol de la persona en cada uno.
+        $proyectos = array_map(function (Proyecto $p) use ($u) {
+            $data = $this->presenter->proyectoLite($p);
+            $data['esResponsable'] = $p->getResponsable()?->getId() === $u->getId();
+            return $data;
+        }, $participa);
+
+        return [
+            'usuario' => $this->presenter->usuario($u),
+            'kpis' => [
+                'carga' => $carga,
+                'estado' => $carga >= 90 ? 'saturado' : ($carga <= 40 ? 'holgura' : 'ok'),
+                'proyectos' => count($participa),
+                'proyectosLidera' => $lidera,
+                'tareasAbiertas' => $abiertas,
+                'tareasVencidas' => $vencidas,
+                'bloqueos' => count($bloqueos),
+            ],
+            'proyectos' => $proyectos,
+            'tareas' => array_map(fn ($t) => $this->presenter->tarea($t), $tareas),
+            'bloqueos' => array_map(fn ($b) => $this->presenter->bloqueo($b), array_values($bloqueos)),
         ];
     }
 

@@ -6,6 +6,7 @@ import { Personal } from './pages/Personal'
 import { Departamento } from './pages/Departamento'
 import { Comercial } from './pages/Comercial'
 import { Proyecto } from './pages/Proyecto'
+import { Persona } from './pages/Persona'
 import { Oportunidad } from './pages/Oportunidad'
 import { Asistente } from './pages/Asistente'
 import { useAuth } from './stores/auth'
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="departamento" element={<Departamento />} />
         <Route path="comercial" element={<Comercial />} />
         <Route path="proyecto/:id" element={<Proyecto />} />
+        <Route path="persona/:id" element={<Persona />} />
         <Route path="oportunidad/:id" element={<Oportunidad />} />
         <Route path="asistente" element={<Asistente />} />
       </Route>

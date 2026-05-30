@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import type {
   DashboardMe, DashboardDepartment, DashboardSales,
-  ProyectoDetalle, Tarea, Bloqueo, Participante, Actividad, Oportunidad, Usuario, Borrador,
+  ProyectoDetalle, Tarea, Bloqueo, Participante, Actividad, Oportunidad, Usuario, Borrador, PersonaOverview,
 } from '../types'
 
 /* ---------- Dashboards ---------- */
@@ -38,6 +38,9 @@ export const useOportunidad = (id: number) =>
 /* ---------- Usuarios ---------- */
 export const useUsuarios = () =>
   useQuery({ queryKey: ['usuarios'], queryFn: async () => (await api.get<Usuario[]>('/users')).data })
+
+export const usePersonaOverview = (id: number) =>
+  useQuery({ queryKey: ['persona', id], queryFn: async () => (await api.get<PersonaOverview>(`/users/${id}/overview`)).data, enabled: !!id })
 
 /* ---------- Mutaciones ---------- */
 function useInvalidar() {

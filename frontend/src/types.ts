@@ -137,26 +137,41 @@ export interface RiesgoBloqueo { proyecto: ProyectoLite; bloqueos: number; diasM
 export interface RiesgoSinActividad { proyecto: ProyectoLite; dias: number }
 export interface RiesgoVencidas { proyecto: ProyectoLite; vencidas: number }
 
-export interface CargaUsuario {
+export type EstadoCarga = 'saturado' | 'ok' | 'holgura'
+
+export interface MiembroEquipo {
   usuario: Usuario
-  proyectos: number
-  tareas: number
   carga: number
+  estado: EstadoCarga
+  proyectos: number
+  proyectosLidera: number
+  tareasAbiertas: number
+  tareasVencidas: number
+  bloqueos: number
 }
 
 export interface DashboardDepartment {
-  kpis: {
-    activos: number; total: number; bloqueados: number; retrasados: number
-    enRevision: number; finalizados: number; tareasVencidas: number
-  }
+  kpisEquipo: { personas: number; saturados: number; tareasVencidas: number; bloqueosActivos: number }
+  kpisProyectos: { activos: number; total: number; bloqueados: number; retrasados: number; enRevision: number; finalizados: number }
+  equipo: MiembroEquipo[]
   riesgos: {
     sinActividad: RiesgoSinActividad[]
     conBloqueos: RiesgoBloqueo[]
     conVencidas: RiesgoVencidas[]
   }
   proyectos: ProyectoLite[]
-  carga: CargaUsuario[]
   actividad: Actividad[]
+}
+
+export interface PersonaOverview {
+  usuario: Usuario
+  kpis: {
+    carga: number; estado: EstadoCarga; proyectos: number; proyectosLidera: number
+    tareasAbiertas: number; tareasVencidas: number; bloqueos: number
+  }
+  proyectos: (ProyectoLite & { esResponsable: boolean })[]
+  tareas: Tarea[]
+  bloqueos: Bloqueo[]
 }
 
 export interface EmbudoItem { estado: EstadoOportunidad; label: string; n: number; importe: number }
