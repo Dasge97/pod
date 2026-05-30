@@ -2,11 +2,16 @@
 
 namespace App\Controller;
 
+use App\Entity\Proyecto;
+use App\Entity\ProyectoUsuario;
 use App\Entity\Tarea;
+use App\Entity\Usuario;
 use App\Enum\EstadoTarea;
 use App\Enum\Prioridad;
+use App\Enum\RolProyecto;
 use App\Enum\TipoActividad;
 use App\Repository\ProyectoRepository;
+use App\Repository\ProyectoUsuarioRepository;
 use App\Repository\UsuarioRepository;
 use App\Service\ActivityLogger;
 use App\Service\Presenter;
@@ -21,11 +26,27 @@ class TareaController extends AbstractController
 {
     public function __construct(
         private ProyectoRepository $proyectos,
+        private ProyectoUsuarioRepository $participantes,
         private UsuarioRepository $usuarios,
         private Presenter $presenter,
         private ActivityLogger $logger,
         private EntityManagerInterface $em,
     ) {
+    }
+
+    /**
+     * Garantiza que quien tiene una tarea asignada forma parte del proyecto.
+     * Si no participa, se añade automáticamente como Colaborador.
+     */
+    private function asegurarParticipacion(Proyecto $proyecto, ?Usuario $usuario): void
+    {
+        if ($usuario === null || $this->participantes->findUno($proyecto, $usuario) !== null) {
+            return;
+        }
+        $pu = new ProyectoUsuario();
+        $pu->setProyecto($proyecto)->setUsuario($usuario)->setRol(RolProyecto::Colaborador);
+        $this->em->persist($pu);
+        $this->logger->log(TipoActividad::ParticipanteAnadido, $this->getUser(), 'añadió al proyecto a', $usuario->getNombre(), $proyecto);
     }
 
     #[Route('', name: 'api_tasks_create', methods: ['POST'])]
@@ -42,6 +63,7 @@ class TareaController extends AbstractController
         $this->aplicar($tarea, $d);
 
         $this->em->persist($tarea);
+        $this->asegurarParticipacion($proyecto, $tarea->getAsignado());
         $this->logger->log(TipoActividad::TareaCreada, $this->getUser(), 'creó la tarea', $tarea->getTitulo(), $proyecto);
         $this->em->flush();
 
@@ -59,6 +81,7 @@ class TareaController extends AbstractController
     {
         $estadoPrevio = $tarea->getEstado();
         $this->aplicar($tarea, $request->toArray());
+        $this->asegurarParticipacion($tarea->getProyecto(), $tarea->getAsignado());
 
         if ($estadoPrevio !== EstadoTarea::Finalizada && $tarea->getEstado() === EstadoTarea::Finalizada) {
             $this->logger->log(TipoActividad::TareaCompletada, $this->getUser(), 'completó', $tarea->getTitulo(), $tarea->getProyecto());

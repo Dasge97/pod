@@ -71,6 +71,12 @@ class ProyectoController extends AbstractController
         }
 
         $this->em->persist($proyecto);
+
+        // El responsable forma parte del proyecto desde el inicio.
+        $pu = new ProyectoUsuario();
+        $pu->setProyecto($proyecto)->setUsuario($proyecto->getResponsable())->setRol(RolProyecto::Responsable);
+        $this->em->persist($pu);
+
         $this->logger->log(TipoActividad::ProyectoCreado, $this->getUser(), 'creó el proyecto', $proyecto->getNombre(), $proyecto);
         $this->em->flush();
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useProyecto, useProyectoTareas, useProyectoBloqueos, useProyectoMiembros, useProyectoActividad, useResolverBloqueo, useUpdateProyecto, useCrearTarea, useUsuarios } from '../api/hooks'
+import { useProyecto, useProyectoTareas, useProyectoBloqueos, useProyectoMiembros, useProyectoActividad, useResolverBloqueo, useUpdateProyecto, useCrearTarea, useUsuarios, useAddMiembro, useRemoveMiembro } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
 import { Card, EstadoBadge, PrioridadBadge, Badge, Avatar, Progress } from '../components/ui'
 import { TareaRow } from '../components/rows'
@@ -12,6 +12,7 @@ import { Cargando } from './Personal'
 
 const ESTADOS_PROYECTO: [string, string][] = [['pendiente', 'Pendiente'], ['progreso', 'En progreso'], ['bloqueado', 'Bloqueado'], ['revision', 'En revisión'], ['finalizado', 'Finalizado']]
 const PRIORIDADES: [string, string][] = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta'], ['critica', 'Crítica']]
+const ROLES_PROYECTO: [string, string][] = [['responsable', 'Responsable'], ['colaborador', 'Colaborador'], ['consultado', 'Consultado']]
 
 function DateBox({ label, value, icon, tone = 'zinc' }: { label: string; value: string; icon: string; tone?: Tone }) {
   return (
@@ -36,11 +37,15 @@ export function Proyecto() {
   const resolver = useResolverBloqueo()
   const actualizar = useUpdateProyecto()
   const crearTarea = useCrearTarea()
+  const addMiembro = useAddMiembro()
+  const removeMiembro = useRemoveMiembro()
   const { data: usuarios = [] } = useUsuarios()
   const [editOpen, setEditOpen] = useState(false)
   const [tareaOpen, setTareaOpen] = useState(false)
+  const [partOpen, setPartOpen] = useState(false)
   const [form, setForm] = useState({ nombre: '', descripcion: '', estado: 'pendiente', prioridad: 'media', progreso: 0, responsable: '' as number | '', fechaInicio: '', fechaFinEstimada: '', fechaFinReal: '' })
   const [tarea, setTarea] = useState({ titulo: '', asignado: '' as number | '', prioridad: 'media', estimacionHoras: '' as number | '', fechaLimite: '' })
+  const [nuevoPart, setNuevoPart] = useState({ usuario: '' as number | '', rol: 'colaborador' })
 
   useHeader({ crumbs: [{ label: 'Departamento', to: '/departamento' }, { label: p?.nombre ?? '…' }] }, [p?.nombre])
 
@@ -76,6 +81,19 @@ export function Proyecto() {
       fechaLimite: tarea.fechaLimite || null,
     }, { onSuccess: () => { setTareaOpen(false); setTarea({ titulo: '', asignado: '', prioridad: 'media', estimacionHoras: '', fechaLimite: '' }) } })
   }
+
+  function anadirParticipante() {
+    if (!nuevoPart.usuario) return
+    addMiembro.mutate({ proyectoId: pid, usuario: Number(nuevoPart.usuario), rol: nuevoPart.rol },
+      { onSuccess: () => { setPartOpen(false); setNuevoPart({ usuario: '', rol: 'colaborador' }) } })
+  }
+
+  // Para el selector de tareas: separar participantes de externos.
+  const idsParticipantes = new Set(miembros.map((m) => m.usuario.id))
+  const participantesUsuarios = usuarios.filter((u) => idsParticipantes.has(u.id))
+  const externosUsuarios = usuarios.filter((u) => !idsParticipantes.has(u.id))
+  const asignadoEsExterno = tarea.asignado !== '' && !idsParticipantes.has(Number(tarea.asignado))
+  const disponiblesParaAnadir = usuarios.filter((u) => !idsParticipantes.has(u.id))
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
@@ -155,18 +173,25 @@ export function Proyecto() {
         </div>
 
         <div className="space-y-5">
-          <Card title="Participantes" pad={false}>
+          <Card title="Participantes" pad={false} action={
+            disponiblesParaAnadir.length > 0 && (
+              <button onClick={() => setPartOpen(true)} className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline"><Icon name="plus" className="w-3.5 h-3.5" />Añadir</button>
+            )
+          }>
             <div className="px-2 py-2 space-y-0.5">
               {miembros.map((pp) => (
-                <div key={pp.usuario.id} className="flex items-center gap-3 px-3 h-12">
+                <div key={pp.usuario.id} className="group flex items-center gap-3 px-3 h-12">
                   <Avatar user={pp.usuario} size="md" />
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100 truncate">{pp.usuario.nombre}</div>
                     <div className="text-[11px] text-zinc-400 truncate">{pp.usuario.rolLabel}</div>
                   </div>
                   <Badge tone={ROL_PART_TONE[pp.rol]} dot={false}>{pp.rolLabel}</Badge>
+                  <button onClick={() => removeMiembro.mutate({ proyectoId: pid, usuarioId: pp.usuario.id })} title="Quitar del proyecto"
+                    className="w-6 h-6 rounded flex items-center justify-center text-zinc-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition shrink-0"><Icon name="blocked" className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
+              {miembros.length === 0 && <p className="px-3 py-4 text-sm text-zinc-400 text-center">Sin participantes. Añade personas al proyecto.</p>}
             </div>
           </Card>
 
@@ -225,13 +250,49 @@ export function Proyecto() {
         <div className="space-y-4">
           <Field label="Título"><input className={fieldCls} autoFocus value={tarea.titulo} onChange={(e) => setTarea((t) => ({ ...t, titulo: e.target.value }))} /></Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Asignado"><select className={fieldCls} value={tarea.asignado} onChange={(e) => setTarea((t) => ({ ...t, asignado: e.target.value ? Number(e.target.value) : '' }))}><option value="">Sin asignar</option>{usuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}</select></Field>
+            <Field label="Asignado">
+              <select className={fieldCls} value={tarea.asignado} onChange={(e) => setTarea((t) => ({ ...t, asignado: e.target.value ? Number(e.target.value) : '' }))}>
+                <option value="">Sin asignar</option>
+                <optgroup label="Participantes del proyecto">
+                  {participantesUsuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+                </optgroup>
+                {externosUsuarios.length > 0 && (
+                  <optgroup label="Otras personas (se añadirán al proyecto)">
+                    {externosUsuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+                  </optgroup>
+                )}
+              </select>
+            </Field>
             <Field label="Prioridad"><select className={fieldCls} value={tarea.prioridad} onChange={(e) => setTarea((t) => ({ ...t, prioridad: e.target.value }))}>{PRIORIDADES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
           </div>
+          {asignadoEsExterno && (
+            <p className="text-[12px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5"><Icon name="alert" className="w-3.5 h-3.5 shrink-0" />Esta persona no participa en el proyecto. Se añadirá como colaborador.</p>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Estimación (horas)"><input type="number" min={0} className={fieldCls} value={tarea.estimacionHoras} onChange={(e) => setTarea((t) => ({ ...t, estimacionHoras: e.target.value === '' ? '' : Number(e.target.value) }))} /></Field>
             <Field label="Fecha límite"><input type="date" className={fieldCls} value={tarea.fechaLimite} onChange={(e) => setTarea((t) => ({ ...t, fechaLimite: e.target.value }))} /></Field>
           </div>
+        </div>
+      </Modal>
+
+      {/* Modal: añadir participante */}
+      <Modal open={partOpen} onClose={() => setPartOpen(false)} title="Añadir participante"
+        footer={<>
+          <button onClick={() => setPartOpen(false)} className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Cancelar</button>
+          <button onClick={anadirParticipante} disabled={addMiembro.isPending || !nuevoPart.usuario} className="h-9 px-4 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition disabled:opacity-50">Añadir</button>
+        </>}>
+        <div className="space-y-4">
+          <Field label="Persona">
+            <select className={fieldCls} value={nuevoPart.usuario} onChange={(e) => setNuevoPart((p) => ({ ...p, usuario: e.target.value ? Number(e.target.value) : '' }))}>
+              <option value="">Selecciona…</option>
+              {disponiblesParaAnadir.map((u) => <option key={u.id} value={u.id}>{u.nombre} · {u.rolLabel}</option>)}
+            </select>
+          </Field>
+          <Field label="Rol en el proyecto">
+            <select className={fieldCls} value={nuevoPart.rol} onChange={(e) => setNuevoPart((p) => ({ ...p, rol: e.target.value }))}>
+              {ROLES_PROYECTO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </Field>
         </div>
       </Modal>
     </div>

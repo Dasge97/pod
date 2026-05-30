@@ -109,6 +109,41 @@ export const useUpdateProyecto = () => {
   })
 }
 
+export const useCrearProyecto = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (datos: Record<string, unknown>) => (await api.post<ProyectoDetalle>('/projects', datos)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['proyectos'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
+export const useAddMiembro = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ proyectoId, usuario, rol }: { proyectoId: number; usuario: number; rol: string }) =>
+      (await api.post(`/projects/${proyectoId}/members`, { usuario, rol })).data,
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['proyecto', v.proyectoId] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
+export const useRemoveMiembro = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ proyectoId, usuarioId }: { proyectoId: number; usuarioId: number }) =>
+      (await api.delete(`/projects/${proyectoId}/members/${usuarioId}`)).data,
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['proyecto', v.proyectoId] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
 export const useUpdateOportunidad = () => {
   const qc = useQueryClient()
   return useMutation({

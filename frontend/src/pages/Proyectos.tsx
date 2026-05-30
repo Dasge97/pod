@@ -1,15 +1,34 @@
 import { useState } from 'react'
-import { useProyectos } from '../api/hooks'
+import { useNavigate } from 'react-router-dom'
+import { useProyectos, useCrearProyecto, useUsuarios } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
 import { Card, Kpi } from '../components/ui'
 import { ProyectoRow } from '../components/rows'
+import { Modal, Field, fieldCls } from '../components/Modal'
+import { Icon } from '../components/Icon'
 import { cn } from '../lib/ui'
 import { Cargando } from './Personal'
 
+const PRIORIDADES: [string, string][] = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta'], ['critica', 'Crítica']]
+
 export function Proyectos() {
+  const navigate = useNavigate()
   const [filtro, setFiltro] = useState('todos')
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ nombre: '', cliente: '', descripcion: '', responsable: '' as number | '', prioridad: 'media', fechaInicio: '', fechaFinEstimada: '' })
   const { data: proyectos, isLoading } = useProyectos()
+  const { data: usuarios = [] } = useUsuarios()
+  const crearProyecto = useCrearProyecto()
   useHeader({ title: 'Proyectos', sub: 'Todos los proyectos del departamento' }, [])
+
+  function crear() {
+    if (!form.nombre.trim()) return
+    crearProyecto.mutate({
+      nombre: form.nombre, cliente: form.cliente || 'Interno', descripcion: form.descripcion || null,
+      responsable: form.responsable || undefined, prioridad: form.prioridad,
+      fechaInicio: form.fechaInicio || null, fechaFinEstimada: form.fechaFinEstimada || null,
+    }, { onSuccess: (p) => { setOpen(false); navigate(`/proyecto/${p.id}`) } })
+  }
 
   if (isLoading || !proyectos) return <Cargando />
 
@@ -37,6 +56,12 @@ export function Proyectos() {
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
+      <div className="flex justify-end">
+        <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition">
+          <Icon name="plus" className="w-4 h-4" />Nuevo proyecto
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Kpi icon="folder" label="Activos" value={conteo.activos} sub={`de ${conteo.total}`} tone="blue" onClick={() => setFiltro('progreso')} />
         <Kpi icon="blocked" label="Bloqueados" value={conteo.bloqueados} sub="ahora" tone="red" onClick={() => setFiltro('bloqueado')} />
@@ -65,6 +90,26 @@ export function Proyectos() {
           {lista.length === 0 && <p className="px-3 py-10 text-sm text-zinc-400 text-center">No hay proyectos en este filtro.</p>}
         </div>
       </Card>
+
+      <Modal open={open} onClose={() => setOpen(false)} title="Nuevo proyecto"
+        footer={<>
+          <button onClick={() => setOpen(false)} className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Cancelar</button>
+          <button onClick={crear} disabled={crearProyecto.isPending || !form.nombre.trim()} className="h-9 px-4 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition disabled:opacity-50">Crear proyecto</button>
+        </>}>
+        <div className="space-y-4">
+          <Field label="Nombre"><input className={fieldCls} autoFocus value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Cliente"><input className={fieldCls} placeholder="Interno" value={form.cliente} onChange={(e) => setForm((f) => ({ ...f, cliente: e.target.value }))} /></Field>
+            <Field label="Prioridad"><select className={fieldCls} value={form.prioridad} onChange={(e) => setForm((f) => ({ ...f, prioridad: e.target.value }))}>{PRIORIDADES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+          </div>
+          <Field label="Descripción"><textarea className={cn(fieldCls, 'h-auto py-2 resize-none')} rows={2} value={form.descripcion} onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))} /></Field>
+          <Field label="Responsable"><select className={fieldCls} value={form.responsable} onChange={(e) => setForm((f) => ({ ...f, responsable: e.target.value ? Number(e.target.value) : '' }))}><option value="">Tú (por defecto)</option>{usuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}</select></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Inicio"><input type="date" className={fieldCls} value={form.fechaInicio} onChange={(e) => setForm((f) => ({ ...f, fechaInicio: e.target.value }))} /></Field>
+            <Field label="Fin estimada"><input type="date" className={fieldCls} value={form.fechaFinEstimada} onChange={(e) => setForm((f) => ({ ...f, fechaFinEstimada: e.target.value }))} /></Field>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
