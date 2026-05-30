@@ -139,6 +139,12 @@ export interface RiesgoVencidas { proyecto: ProyectoLite; vencidas: number }
 
 export type EstadoCarga = 'saturado' | 'ok' | 'holgura'
 
+export interface ProyectoActivoRef {
+  id: number
+  nombre: string
+  estado: EstadoProyecto
+}
+
 export interface MiembroEquipo {
   usuario: Usuario
   carga: number
@@ -148,6 +154,7 @@ export interface MiembroEquipo {
   tareasAbiertas: number
   tareasVencidas: number
   bloqueos: number
+  proyectosActivos: ProyectoActivoRef[]
 }
 
 export interface DashboardDepartment {

@@ -146,6 +146,7 @@ class DashboardService
             $abiertas = $this->tareas->countAbiertasPorUsuario($u);
             $participa = $this->proyectos->findByParticipante($u);
             $lidera = count(array_filter($participa, fn (Proyecto $p) => $p->getResponsable()?->getId() === $u->getId()));
+            $activosU = array_values(array_filter($participa, fn (Proyecto $p) => $p->getEstado() !== EstadoProyecto::Finalizado));
             $carga = min(100, $abiertas * 14);
             $equipo[] = [
                 'usuario' => $this->presenter->usuario($u),
@@ -156,6 +157,11 @@ class DashboardService
                 'tareasAbiertas' => $abiertas,
                 'tareasVencidas' => $vencidasPorUsuario[$u->getId()] ?? 0,
                 'bloqueos' => $bloqueosPorUsuario[$u->getId()] ?? 0,
+                'proyectosActivos' => array_map(fn (Proyecto $p) => [
+                    'id' => $p->getId(),
+                    'nombre' => $p->getNombre(),
+                    'estado' => $p->getEstado()->value,
+                ], $activosU),
             ];
         }
         usort($equipo, fn ($a, $b) => $b['carga'] <=> $a['carga']);

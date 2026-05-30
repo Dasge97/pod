@@ -2,18 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboardDepartment } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
-import { Card, Kpi, ActivityItem, Progress, Badge } from '../components/ui'
+import { Card, Kpi, ActivityItem, Progress } from '../components/ui'
 import { ProyectoRow } from '../components/rows'
 import { Icon } from '../components/Icon'
-import { cn, TONES, cargaTone, type Tone } from '../lib/ui'
+import { cn, TONES, cargaTone, barTone, type Tone } from '../lib/ui'
 import { Cargando } from './Personal'
-import type { ProyectoLite, MiembroEquipo, EstadoCarga } from '../types'
-
-const ESTADO_CARGA: Record<EstadoCarga, { label: string; tone: Tone }> = {
-  saturado: { label: 'Saturado', tone: 'red' },
-  ok: { label: 'En carga', tone: 'amber' },
-  holgura: { label: 'Con holgura', tone: 'emerald' },
-}
+import type { ProyectoLite, MiembroEquipo } from '../types'
 
 function RiesgoRow({ icon, tone, texto, detalle, meta, onClick }: { icon: string; tone: Tone; texto: string; detalle: string; meta: string; onClick: () => void }) {
   const t = TONES[tone]
@@ -29,50 +23,37 @@ function RiesgoRow({ icon, tone, texto, detalle, meta, onClick }: { icon: string
   )
 }
 
-function Metrica({ label, value, tone }: { label: string; value: number; tone?: Tone }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-50 dark:bg-zinc-800/40 py-2.5">
-      <span className={cn('font-mono text-xl font-semibold tabular-nums', tone ? TONES[tone].text : 'text-zinc-900 dark:text-zinc-50')}>{value}</span>
-      <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mt-0.5">{label}</span>
-    </div>
-  )
-}
-
 function EquipoCard({ m }: { m: MiembroEquipo }) {
   const navigate = useNavigate()
-  const e = ESTADO_CARGA[m.estado]
   const ct = cargaTone(m.carga)
-  const inicial = m.usuario.nombre.charAt(0)
   return (
     <button
       onClick={() => navigate(`/persona/${m.usuario.id}`)}
       className="group text-left rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition"
     >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="min-w-0 flex items-center gap-2.5">
-          <span className={cn('w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-sm font-bold', TONES[e.tone].soft)}>{inicial}</span>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{m.usuario.nombre}</div>
-            <div className="text-[11px] text-zinc-400 truncate">{m.usuario.rolLabel}</div>
-          </div>
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{m.usuario.nombre}</div>
+          <div className="text-[11px] text-zinc-400 truncate">{m.usuario.rolLabel}</div>
         </div>
-        <Badge tone={e.tone} dot>{e.label}</Badge>
+        <span className={cn('font-mono text-sm font-semibold tabular-nums shrink-0', TONES[ct].text)}>{m.carga}%</span>
       </div>
 
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Carga de trabajo</span>
-          <span className={cn('font-mono text-[12px] font-semibold tabular-nums', TONES[ct].text)}>{m.carga}%</span>
-        </div>
-        <Progress value={m.carga} tone={ct} />
-        {m.proyectosLidera > 0 && <div className="text-[11px] text-zinc-400 mt-1.5">Lidera {m.proyectosLidera} proyecto{m.proyectosLidera > 1 ? 's' : ''}</div>}
-      </div>
+      <Progress value={m.carga} tone={ct} />
 
-      <div className="grid grid-cols-4 gap-1.5">
-        <Metrica label="Proy." value={m.proyectos} />
-        <Metrica label="Tareas" value={m.tareasAbiertas} />
-        <Metrica label="Venc." value={m.tareasVencidas} tone={m.tareasVencidas ? 'red' : undefined} />
-        <Metrica label="Bloq." value={m.bloqueos} tone={m.bloqueos ? 'amber' : undefined} />
+      <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+        {m.proyectosActivos.length === 0 ? (
+          <p className="text-[12px] text-zinc-400">Sin proyectos activos</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {m.proyectosActivos.map((p) => (
+              <li key={p.id} className="flex items-center gap-2 text-[12px] text-zinc-600 dark:text-zinc-300">
+                <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', TONES[barTone(p.estado)].dot)} />
+                <span className="truncate">{p.nombre}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </button>
   )
