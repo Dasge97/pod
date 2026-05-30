@@ -35,3 +35,9 @@ Desktop.ini
 *.swp
 *.suo
 *.user
+
+# Temporales de verificación/capturas
+_boot.html
+frontend/public/_boot.html
+_v_*.png
+_verify*.png
