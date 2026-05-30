@@ -1,38 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import { useDashboardSales } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
-import { Card, Kpi, Avatar, Progress, OppBadge } from '../components/ui'
+import { Card, Kpi } from '../components/ui'
+import { OppRow } from '../components/rows'
 import { Icon } from '../components/Icon'
 import { cn, TONES, OPP_ESTADO_TONE, type Tone } from '../lib/ui'
 import { fmtEur } from '../lib/format'
 import { Cargando } from './Personal'
-import type { Oportunidad } from '../types'
-
-function OppRow({ o }: { o: Oportunidad }) {
-  const navigate = useNavigate()
-  const probTone: Tone = o.probabilidad >= 70 ? 'emerald' : o.probabilidad >= 45 ? 'amber' : 'zinc'
-  const alerta = (o.estado === 'sin_respuesta' && (o.diasEnvio ?? 0) > 14) || (o.probabilidad >= 70 && (o.diasSinSeguimiento ?? 0) > 10)
-  const dEnvio = o.diasEnvio ?? 0
-  return (
-    <button onClick={() => navigate(`/oportunidad/${o.id}`)} className="group w-full grid grid-cols-12 items-center gap-3 px-3 h-14 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition text-left">
-      <div className="col-span-4 min-w-0 flex items-center gap-2.5">
-        {alerta && <span title="Requiere atención" className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />}
-        <div className="min-w-0">
-          <div className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{o.cliente}</div>
-          <div className="text-[11px] text-zinc-400 truncate">{o.nombre}</div>
-        </div>
-      </div>
-      <div className="col-span-2 font-mono text-[13px] font-medium tabular-nums text-zinc-900 dark:text-zinc-100">{fmtEur(o.importe)}</div>
-      <div className="col-span-2"><OppBadge estado={o.estado} label={o.estadoLabel} /></div>
-      <div className="col-span-2 flex items-center gap-2">
-        <Progress value={o.probabilidad} tone={probTone} className="flex-1" />
-        <span className="font-mono text-[11px] tabular-nums text-zinc-400 w-8 text-right">{o.probabilidad}%</span>
-      </div>
-      <div className={cn('col-span-1 text-[11px] font-medium text-right', dEnvio > 21 ? 'text-red-600 dark:text-red-400' : dEnvio > 14 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-400')}>{dEnvio} d</div>
-      <div className="col-span-1 flex justify-end"><Avatar user={o.responsable} size="sm" /></div>
-    </button>
-  )
-}
 
 function AlertaCard({ tone, titulo, sub, meta, onClick }: { tone: Tone; titulo: string; sub: string; meta: string; onClick: () => void }) {
   const t = TONES[tone]

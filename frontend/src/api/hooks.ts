@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import type {
   DashboardMe, DashboardDepartment, DashboardSales,
-  ProyectoDetalle, Tarea, Bloqueo, Participante, Actividad, Oportunidad, Usuario, Borrador, PersonaOverview,
+  ProyectoLite, ProyectoDetalle, Tarea, Bloqueo, Participante, Actividad, Oportunidad, Usuario, Borrador, PersonaOverview,
 } from '../types'
 
 /* ---------- Dashboards ---------- */
@@ -14,6 +14,19 @@ export const useDashboardDepartment = () =>
 
 export const useDashboardSales = () =>
   useQuery({ queryKey: ['dashboard', 'sales'], queryFn: async () => (await api.get<DashboardSales>('/dashboard/sales')).data })
+
+/* ---------- Listados ---------- */
+export const useProyectos = (filtros: Record<string, string> = {}) =>
+  useQuery({
+    queryKey: ['proyectos', filtros],
+    queryFn: async () => (await api.get<ProyectoLite[]>('/projects', { params: filtros })).data,
+  })
+
+export const useOportunidades = () =>
+  useQuery({ queryKey: ['oportunidades'], queryFn: async () => (await api.get<Oportunidad[]>('/opportunities')).data })
+
+export const useBloqueos = () =>
+  useQuery({ queryKey: ['bloqueos'], queryFn: async () => (await api.get<Bloqueo[]>('/blockers?resuelto=false')).data })
 
 /* ---------- Proyecto ---------- */
 export const useProyecto = (id: number) =>

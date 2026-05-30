@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboardDepartment } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
-import { Card, Kpi, ActivityItem, Avatar, Progress, Badge } from '../components/ui'
+import { Card, Kpi, ActivityItem, Progress, Badge } from '../components/ui'
 import { ProyectoRow } from '../components/rows'
 import { Icon } from '../components/Icon'
 import { cn, TONES, cargaTone, type Tone } from '../lib/ui'
@@ -29,32 +29,50 @@ function RiesgoRow({ icon, tone, texto, detalle, meta, onClick }: { icon: string
   )
 }
 
-function EquipoRow({ m }: { m: MiembroEquipo }) {
+function Metrica({ label, value, tone }: { label: string; value: number; tone?: Tone }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-50 dark:bg-zinc-800/40 py-2.5">
+      <span className={cn('font-mono text-xl font-semibold tabular-nums', tone ? TONES[tone].text : 'text-zinc-900 dark:text-zinc-50')}>{value}</span>
+      <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold mt-0.5">{label}</span>
+    </div>
+  )
+}
+
+function EquipoCard({ m }: { m: MiembroEquipo }) {
   const navigate = useNavigate()
   const e = ESTADO_CARGA[m.estado]
   const ct = cargaTone(m.carga)
+  const inicial = m.usuario.nombre.charAt(0)
   return (
-    <button onClick={() => navigate(`/persona/${m.usuario.id}`)} className="group w-full grid grid-cols-12 items-center gap-3 px-3 h-16 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition text-left">
-      <div className="col-span-4 min-w-0 flex items-center gap-3">
-        <Avatar user={m.usuario} size="lg" />
-        <div className="min-w-0">
-          <div className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{m.usuario.nombre}</div>
-          <div className="text-[11px] text-zinc-400 truncate">{m.usuario.rolLabel}</div>
+    <button
+      onClick={() => navigate(`/persona/${m.usuario.id}`)}
+      className="group text-left rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition"
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0 flex items-center gap-2.5">
+          <span className={cn('w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-sm font-bold', TONES[e.tone].soft)}>{inicial}</span>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{m.usuario.nombre}</div>
+            <div className="text-[11px] text-zinc-400 truncate">{m.usuario.rolLabel}</div>
+          </div>
         </div>
+        <Badge tone={e.tone} dot>{e.label}</Badge>
       </div>
-      <div className="col-span-3 flex items-center gap-2">
-        <Progress value={m.carga} tone={ct} className="flex-1" />
-        <span className={cn('font-mono text-[11px] tabular-nums w-9 text-right', TONES[ct].text)}>{m.carga}%</span>
+
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Carga de trabajo</span>
+          <span className={cn('font-mono text-[12px] font-semibold tabular-nums', TONES[ct].text)}>{m.carga}%</span>
+        </div>
+        <Progress value={m.carga} tone={ct} />
+        {m.proyectosLidera > 0 && <div className="text-[11px] text-zinc-400 mt-1.5">Lidera {m.proyectosLidera} proyecto{m.proyectosLidera > 1 ? 's' : ''}</div>}
       </div>
-      <div className="col-span-2 text-[12px] text-zinc-600 dark:text-zinc-300">
-        <span className="font-mono">{m.proyectos}</span> proy
-        {m.proyectosLidera > 0 && <span className="text-zinc-400"> · lidera {m.proyectosLidera}</span>}
-      </div>
-      <div className="col-span-1 font-mono text-xs tabular-nums text-zinc-500 text-center">{m.tareasAbiertas}</div>
-      <div className="col-span-2 flex items-center justify-end gap-1.5 flex-wrap">
-        {m.tareasVencidas > 0 && <Badge tone="red" dot={false}>{m.tareasVencidas} venc.</Badge>}
-        {m.bloqueos > 0 && <Badge tone="amber" dot={false}><Icon name="alert" className="w-3 h-3" />{m.bloqueos}</Badge>}
-        {m.tareasVencidas === 0 && m.bloqueos === 0 && <Badge tone={e.tone} dot>{e.label}</Badge>}
+
+      <div className="grid grid-cols-4 gap-1.5">
+        <Metrica label="Proy." value={m.proyectos} />
+        <Metrica label="Tareas" value={m.tareasAbiertas} />
+        <Metrica label="Venc." value={m.tareasVencidas} tone={m.tareasVencidas ? 'red' : undefined} />
+        <Metrica label="Bloq." value={m.bloqueos} tone={m.bloqueos ? 'amber' : undefined} />
       </div>
     </button>
   )
@@ -96,16 +114,16 @@ export function Departamento() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 space-y-5">
-          {/* Equipo: protagonista */}
-          <Card title="Equipo" pad={false} action={<span className="text-xs text-zinc-400">{kpisEquipo.saturados} saturados · ordenado por carga</span>}>
-            <div className="px-2 py-1.5">
-              <div className="grid grid-cols-12 gap-3 px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                <span className="col-span-4">Persona</span><span className="col-span-3">Carga</span>
-                <span className="col-span-2">Proyectos</span><span className="col-span-1 text-center">Tareas</span><span className="col-span-2 text-right">Estado</span>
-              </div>
-              {equipo.map((m) => <EquipoRow key={m.usuario.id} m={m} />)}
+          {/* Equipo: protagonista, en cards grandes */}
+          <div>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">Equipo</h3>
+              <span className="text-xs text-zinc-400">{kpisEquipo.saturados} saturados · ordenado por carga</span>
             </div>
-          </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {equipo.map((m) => <EquipoCard key={m.usuario.id} m={m} />)}
+            </div>
+          </div>
 
           {/* Proyectos: contexto secundario */}
           <Card title="Proyectos del departamento" pad={false} action={

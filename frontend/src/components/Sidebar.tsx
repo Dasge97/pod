@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Icon } from './Icon'
-import { Logo } from './Brand'
+import { Logo, Mascota } from './Brand'
 import { Avatar } from './ui'
 import { cn } from '../lib/ui'
 import { api } from '../api/client'
@@ -45,22 +45,19 @@ export function Sidebar() {
 
   return (
     <aside className="w-60 shrink-0 h-full flex flex-col border-r border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-      <div className="h-14 flex items-center gap-2.5 px-4 border-b border-zinc-100 dark:border-zinc-800">
-        <Logo className="h-8 w-auto" />
-        <div className="leading-tight">
-          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">POD</div>
-          <div className="text-[10px] text-zinc-400 -mt-0.5">Panel Operativo de Desarrollo</div>
-        </div>
+      <div className="flex flex-col items-center gap-1.5 px-4 py-4 border-b border-zinc-100 dark:border-zinc-800">
+        <Mascota className="h-16 w-auto" />
+        <Logo className="h-6 w-auto" />
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-0.5">
-          <NavItem icon="home" label="Mi panel" active={en('/')} onClick={() => navigate('/')} />
+          <NavItem icon="home" label="Mi panel" active={pathname === '/'} onClick={() => navigate('/')} />
           <NavItem icon="layers" label="Departamento" active={en('/departamento') || en('/persona')} onClick={() => navigate('/departamento')} />
           <NavItem icon="trending" label="Comercial" active={en('/comercial')} onClick={() => navigate('/comercial')} />
-          <NavItem icon="folder" label="Proyectos" active={en('/proyecto')} onClick={() => navigate('/departamento')} />
-          <NavItem icon="file" label="Oportunidades" active={en('/oportunidad')} onClick={() => navigate('/comercial')} />
-          <NavItem icon="alert" label="Bloqueos" active={false} badge={bloqueosActivos} onClick={() => navigate('/departamento')} />
+          <NavItem icon="folder" label="Proyectos" active={en('/proyecto')} onClick={() => navigate('/proyectos')} />
+          <NavItem icon="file" label="Oportunidades" active={en('/oportunidad')} onClick={() => navigate('/oportunidades')} />
+          <NavItem icon="alert" label="Bloqueos" active={en('/bloqueos')} badge={bloqueosActivos} onClick={() => navigate('/bloqueos')} />
           <NavItem icon="sparkles" label="Asistente IA" active={en('/asistente')} onClick={() => navigate('/asistente')} />
         </div>
       </nav>
