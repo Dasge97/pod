@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboardDepartment } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
-import { Card, Kpi, ActivityItem, Progress } from '../components/ui'
+import { Card, Kpi, KpiBar, ActivityItem, Progress } from '../components/ui'
 import { ProyectoRow } from '../components/rows'
 import { Icon } from '../components/Icon'
 import { cn, TONES, cargaTone, barTone, type Tone } from '../lib/ui'
@@ -86,12 +86,12 @@ export function Departamento() {
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
       {/* KPIs orientados al equipo */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <KpiBar>
         <Kpi icon="users" label="Personas en el equipo" value={kpisEquipo.personas} sub="activas" tone="blue" />
         <Kpi icon="trending" label="Saturados" value={kpisEquipo.saturados} sub="carga ≥ 90%" tone={kpisEquipo.saturados ? 'red' : 'emerald'} />
         <Kpi icon="alert" label="Tareas vencidas" value={kpisEquipo.tareasVencidas} sub="en el equipo" tone={kpisEquipo.tareasVencidas ? 'red' : 'emerald'} />
         <Kpi icon="blocked" label="Bloqueos activos" value={kpisEquipo.bloqueosActivos} sub="afectando al equipo" tone={kpisEquipo.bloqueosActivos ? 'amber' : 'emerald'} />
-      </div>
+      </KpiBar>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 space-y-5">

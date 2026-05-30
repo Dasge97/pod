@@ -5,7 +5,7 @@ import { usePersonaOverview, useProyectos } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
 import { useAuth } from '../stores/auth'
 import { esEncargado } from '../lib/permisos'
-import { Card, Kpi, Avatar, Progress, Badge, EstadoBadge } from '../components/ui'
+import { Card, Kpi, KpiBar, Avatar, Progress, Badge, EstadoBadge } from '../components/ui'
 import { TareaRow, BloqueoCard } from '../components/rows'
 import { NuevaTareaModal } from '../components/NuevaTareaModal'
 import { Icon } from '../components/Icon'
@@ -93,12 +93,12 @@ export function Persona() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <KpiBar>
         <Kpi icon="folder" label="Proyectos" value={kpis.proyectos} sub={kpis.proyectosLidera > 0 ? `lidera ${kpis.proyectosLidera}` : 'participa'} tone="blue" />
         <Kpi icon="checkbox" label="Tareas abiertas" value={kpis.tareasAbiertas} sub="asignadas" tone="violet" />
         <Kpi icon="alert" label="Tareas vencidas" value={kpis.tareasVencidas} sub="requieren acción" tone={kpis.tareasVencidas ? 'red' : 'emerald'} />
         <Kpi icon="blocked" label="Bloqueos" value={kpis.bloqueos} sub="le afectan" tone={kpis.bloqueos ? 'amber' : 'emerald'} />
-      </div>
+      </KpiBar>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* Protagonista: trabajo de la persona, tareas anidadas por proyecto */}

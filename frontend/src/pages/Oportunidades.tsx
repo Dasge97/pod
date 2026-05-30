@@ -3,7 +3,7 @@ import { useOportunidades } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
 import { useAuth } from '../stores/auth'
 import { esComercial } from '../lib/permisos'
-import { Card, Kpi } from '../components/ui'
+import { Card, Kpi, KpiBar } from '../components/ui'
 import { OppRow } from '../components/rows'
 import { OportunidadModal } from '../components/OportunidadModal'
 import { Icon } from '../components/Icon'
@@ -40,11 +40,11 @@ export function Oportunidades() {
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <KpiBar>
         <Kpi icon="trending" label="Pipeline abierto" value={fmtEur(pipeline)} sub={`${oportunidades.filter((o) => abierta(o.estado)).length} oportunidades`} tone="blue" />
         <Kpi icon="check" label="Ganado" value={fmtEur(ganado)} sub="aceptadas" tone="emerald" />
         <Kpi icon="file" label="Total" value={oportunidades.length} sub="presupuestos" tone="zinc" />
-      </div>
+      </KpiBar>
 
       <Card title="Oportunidades" pad={false} action={
         <div className="flex items-center gap-2 flex-wrap justify-end">

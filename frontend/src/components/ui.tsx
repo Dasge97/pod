@@ -67,26 +67,31 @@ export function Progress({ value, tone = 'emerald', className = '' }: { value: n
   )
 }
 
-/* ---------- KPI ---------- */
+/* ---------- KPI (banda discreta) ---------- */
+/** Contenedor: agrupa los KPIs en una sola banda con divisores, sin tarjetas individuales. */
+export function KpiBar({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-wrap divide-x divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
+      {children}
+    </div>
+  )
+}
+
 export function Kpi({ icon, label, value, sub, tone = 'zinc', onClick }: { icon?: string; label: string; value: ReactNode; sub?: ReactNode; tone?: Tone; onClick?: () => void }) {
   const t = TONES[tone] || TONES.zinc
   return (
     <button
       onClick={onClick}
       disabled={!onClick}
-      className={cn('text-left rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 transition', onClick ? 'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm cursor-pointer' : 'cursor-default')}
+      className={cn('flex-1 min-w-[120px] text-left px-4 py-2.5 transition', onClick ? 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer' : 'cursor-default')}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[13px] text-zinc-500 dark:text-zinc-400">{label}</span>
-        {icon && (
-          <span className={cn('w-7 h-7 rounded-lg flex items-center justify-center ring-1 ring-inset', t.soft)}>
-            <Icon name={icon} className="w-4 h-4" />
-          </span>
-        )}
+      <div className="flex items-baseline gap-1.5">
+        <span className="font-mono text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{value}</span>
+        {sub && <span className="text-[11px] text-zinc-400 truncate">{sub}</span>}
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="font-mono text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{value}</span>
-        {sub && <span className="text-xs text-zinc-400">{sub}</span>}
+      <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+        {icon && <Icon name={icon} className={cn('w-3 h-3 shrink-0', t.text)} />}
+        <span className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">{label}</span>
       </div>
     </button>
   )

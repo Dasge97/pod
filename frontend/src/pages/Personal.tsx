@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useDashboardMe } from '../api/hooks'
 import { useAuth } from '../stores/auth'
 import { useHeader } from '../lib/useHeader'
-import { Card, Kpi, ActivityItem } from '../components/ui'
+import { Card, Kpi, KpiBar, ActivityItem } from '../components/ui'
 import { ProyectoRow, TareaRow, BloqueoCard } from '../components/rows'
 import { NuevaTareaModal } from '../components/NuevaTareaModal'
 import { Icon } from '../components/Icon'
@@ -29,12 +29,12 @@ export function Personal() {
         <p className="text-sm text-zinc-400">Esto es lo que necesita tu atención hoy.</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <KpiBar>
         <Kpi icon="folder" label="Proyectos activos" value={data.kpis.proyectosActivos} sub={`de ${data.kpis.proyectosTotales}`} tone="blue" onClick={() => navigate('/departamento')} />
         <Kpi icon="checkbox" label="Tareas pendientes" value={data.kpis.tareasPendientes} sub={`${data.kpis.tareasVencidas} vencidas`} tone="violet" />
         <Kpi icon="alert" label="Bloqueos activos" value={data.kpis.bloqueosActivos} sub="requieren acción" tone={data.kpis.bloqueosActivos ? 'red' : 'emerald'} />
         <Kpi icon="trending" label="Progreso medio" value={`${data.kpis.progresoMedio}%`} sub="mis proyectos" tone="emerald" />
-      </div>
+      </KpiBar>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 space-y-5">

@@ -4,7 +4,7 @@ import { useProyectos, useCrearProyecto, useUsuarios } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
 import { useAuth } from '../stores/auth'
 import { esEncargado } from '../lib/permisos'
-import { Card, Kpi } from '../components/ui'
+import { Card, Kpi, KpiBar } from '../components/ui'
 import { ProyectoRow } from '../components/rows'
 import { Modal, Field, fieldCls } from '../components/Modal'
 import { Icon } from '../components/Icon'
@@ -68,14 +68,14 @@ export function Proyectos() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <KpiBar>
         <Kpi icon="folder" label="Activos" value={conteo.activos} sub={`de ${conteo.total}`} tone="blue" onClick={() => setFiltro('progreso')} />
         <Kpi icon="blocked" label="Bloqueados" value={conteo.bloqueados} sub="ahora" tone="red" onClick={() => setFiltro('bloqueado')} />
         <Kpi icon="clock" label="Retrasados" value={conteo.retrasados} sub="sobre plan" tone="amber" onClick={() => setFiltro('retrasados')} />
         <Kpi icon="flag" label="En revisión" value={conteo.revision} sub="por cerrar" tone="violet" onClick={() => setFiltro('revision')} />
         <Kpi icon="check" label="Finalizados" value={conteo.finalizados} sub="cerrados" tone="emerald" onClick={() => setFiltro('finalizado')} />
         <Kpi icon="layers" label="Total" value={conteo.total} sub="proyectos" tone="zinc" onClick={() => setFiltro('todos')} />
-      </div>
+      </KpiBar>
 
       <Card title="Proyectos" pad={false} action={
         <div className="flex items-center gap-1 flex-wrap justify-end">

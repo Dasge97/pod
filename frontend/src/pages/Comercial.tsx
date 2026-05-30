@@ -3,7 +3,7 @@ import { useDashboardSales } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
 import { useAuth } from '../stores/auth'
 import { esComercial } from '../lib/permisos'
-import { Card, Kpi } from '../components/ui'
+import { Card, Kpi, KpiBar } from '../components/ui'
 import { OppRow } from '../components/rows'
 import { Icon } from '../components/Icon'
 import { cn, TONES, OPP_ESTADO_TONE, type Tone } from '../lib/ui'
@@ -39,12 +39,12 @@ export function Comercial() {
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <KpiBar>
         <Kpi icon="trending" label="Pipeline activo" value={fmtEur(kpis.pipeline)} sub={`${oportunidades.length} oportunidades`} tone="blue" />
         <Kpi icon="filter" label="Pipeline ponderado" value={fmtEur(kpis.ponderado)} sub="por probabilidad" tone="violet" />
         <Kpi icon="check" label="Ganado" value={fmtEur(kpis.ganado)} sub="este trim." tone="emerald" />
         <Kpi icon="alert" label="Alertas" value={kpis.alertas} sub="requieren acción" tone="amber" />
-      </div>
+      </KpiBar>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 space-y-5">
