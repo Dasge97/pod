@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useProyecto, useProyectoTareas, useProyectoBloqueos, useProyectoMiembros, useProyectoActividad, useResolverBloqueo, useUpdateProyecto, useCrearTarea, useUsuarios, useAddMiembro, useRemoveMiembro } from '../api/hooks'
+import { useProyecto, useProyectoTareas, useProyectoBloqueos, useProyectoMiembros, useProyectoActividad, useResolverBloqueo, useUpdateProyecto, useUsuarios, useAddMiembro, useRemoveMiembro, useComentarProyecto } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
+import { useAuth } from '../stores/auth'
+import { esEncargado } from '../lib/permisos'
 import { Card, EstadoBadge, PrioridadBadge, Badge, Avatar, Progress } from '../components/ui'
 import { TareaRow } from '../components/rows'
 import { Modal, Field, fieldCls } from '../components/Modal'
+import { NuevaTareaModal } from '../components/NuevaTareaModal'
 import { Icon } from '../components/Icon'
 import { cn, TONES, barTone, ROL_PART_TONE, type Tone } from '../lib/ui'
 import { fmtFechaCorta, hace } from '../lib/format'
@@ -35,16 +38,18 @@ export function Proyecto() {
   const { data: miembros = [] } = useProyectoMiembros(pid)
   const { data: actividad = [] } = useProyectoActividad(pid)
   const resolver = useResolverBloqueo()
+  const { user } = useAuth()
+  const puedeGestionar = esEncargado(user)
   const actualizar = useUpdateProyecto()
-  const crearTarea = useCrearTarea()
   const addMiembro = useAddMiembro()
   const removeMiembro = useRemoveMiembro()
+  const comentar = useComentarProyecto()
+  const [comentario, setComentario] = useState('')
   const { data: usuarios = [] } = useUsuarios()
   const [editOpen, setEditOpen] = useState(false)
   const [tareaOpen, setTareaOpen] = useState(false)
   const [partOpen, setPartOpen] = useState(false)
   const [form, setForm] = useState({ nombre: '', descripcion: '', estado: 'pendiente', prioridad: 'media', progreso: 0, responsable: '' as number | '', fechaInicio: '', fechaFinEstimada: '', fechaFinReal: '' })
-  const [tarea, setTarea] = useState({ titulo: '', asignado: '' as number | '', prioridad: 'media', estimacionHoras: '' as number | '', fechaLimite: '' })
   const [nuevoPart, setNuevoPart] = useState({ usuario: '' as number | '', rol: 'colaborador' })
 
   useHeader({ crumbs: [{ label: 'Departamento', to: '/departamento' }, { label: p?.nombre ?? '…' }] }, [p?.nombre])
@@ -72,28 +77,19 @@ export function Proyecto() {
     } }, { onSuccess: () => setEditOpen(false) })
   }
 
-  function guardarTarea() {
-    if (!tarea.titulo.trim()) return
-    crearTarea.mutate({
-      proyecto: pid, titulo: tarea.titulo, prioridad: tarea.prioridad,
-      asignado: tarea.asignado || null,
-      estimacionHoras: tarea.estimacionHoras === '' ? null : Number(tarea.estimacionHoras),
-      fechaLimite: tarea.fechaLimite || null,
-    }, { onSuccess: () => { setTareaOpen(false); setTarea({ titulo: '', asignado: '', prioridad: 'media', estimacionHoras: '', fechaLimite: '' }) } })
-  }
-
   function anadirParticipante() {
     if (!nuevoPart.usuario) return
     addMiembro.mutate({ proyectoId: pid, usuario: Number(nuevoPart.usuario), rol: nuevoPart.rol },
       { onSuccess: () => { setPartOpen(false); setNuevoPart({ usuario: '', rol: 'colaborador' }) } })
   }
 
-  // Para el selector de tareas: separar participantes de externos.
-  const idsParticipantes = new Set(miembros.map((m) => m.usuario.id))
-  const participantesUsuarios = usuarios.filter((u) => idsParticipantes.has(u.id))
-  const externosUsuarios = usuarios.filter((u) => !idsParticipantes.has(u.id))
-  const asignadoEsExterno = tarea.asignado !== '' && !idsParticipantes.has(Number(tarea.asignado))
-  const disponiblesParaAnadir = usuarios.filter((u) => !idsParticipantes.has(u.id))
+  function enviarComentario() {
+    if (!comentario.trim()) return
+    comentar.mutate({ proyectoId: pid, texto: comentario.trim() }, { onSuccess: () => setComentario('') })
+  }
+
+  const idsParticipantes = miembros.map((m) => m.usuario.id)
+  const disponiblesParaAnadir = usuarios.filter((u) => !idsParticipantes.includes(u.id))
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
@@ -117,10 +113,12 @@ export function Proyecto() {
               <span className="text-[13px] font-medium text-zinc-700 dark:text-zinc-200">{p.responsable?.nombre}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={abrirEdicion} className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition flex items-center gap-1.5"><Icon name="edit" className="w-4 h-4" />Editar</button>
-            <button onClick={() => setTareaOpen(true)} className="h-9 px-3 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition flex items-center gap-1.5"><Icon name="plus" className="w-4 h-4" />Nueva tarea</button>
-          </div>
+          {puedeGestionar && (
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={abrirEdicion} className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition flex items-center gap-1.5"><Icon name="edit" className="w-4 h-4" />Editar</button>
+              <button onClick={() => setTareaOpen(true)} className="h-9 px-3 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition flex items-center gap-1.5"><Icon name="plus" className="w-4 h-4" />Nueva tarea</button>
+            </div>
+          )}
         </div>
 
         <div className="mt-5 pt-5 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -174,7 +172,7 @@ export function Proyecto() {
 
         <div className="space-y-5">
           <Card title="Participantes" pad={false} action={
-            disponiblesParaAnadir.length > 0 && (
+            puedeGestionar && disponiblesParaAnadir.length > 0 && (
               <button onClick={() => setPartOpen(true)} className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline"><Icon name="plus" className="w-3.5 h-3.5" />Añadir</button>
             )
           }>
@@ -187,8 +185,10 @@ export function Proyecto() {
                     <div className="text-[11px] text-zinc-400 truncate">{pp.usuario.rolLabel}</div>
                   </div>
                   <Badge tone={ROL_PART_TONE[pp.rol]} dot={false}>{pp.rolLabel}</Badge>
-                  <button onClick={() => removeMiembro.mutate({ proyectoId: pid, usuarioId: pp.usuario.id })} title="Quitar del proyecto"
-                    className="w-6 h-6 rounded flex items-center justify-center text-zinc-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition shrink-0"><Icon name="blocked" className="w-3.5 h-3.5" /></button>
+                  {puedeGestionar && (
+                    <button onClick={() => removeMiembro.mutate({ proyectoId: pid, usuarioId: pp.usuario.id })} title="Quitar del proyecto"
+                      className="w-6 h-6 rounded flex items-center justify-center text-zinc-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition shrink-0"><Icon name="blocked" className="w-3.5 h-3.5" /></button>
+                  )}
                 </div>
               ))}
               {miembros.length === 0 && <p className="px-3 py-4 text-sm text-zinc-400 text-center">Sin participantes. Añade personas al proyecto.</p>}
@@ -196,6 +196,13 @@ export function Proyecto() {
           </Card>
 
           <Card title="Actividad del proyecto" pad={false}>
+            <div className="px-3 pt-3 pb-1">
+              <div className="flex gap-2">
+                <input value={comentario} onChange={(e) => setComentario(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') enviarComentario() }}
+                  placeholder="Escribe un comentario…" className="flex-1 h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-[13px] text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition" />
+                <button onClick={enviarComentario} disabled={!comentario.trim() || comentar.isPending} className="h-9 px-3 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition disabled:opacity-50 shrink-0">Enviar</button>
+              </div>
+            </div>
             <ul className="px-4 py-1 divide-y divide-zinc-100 dark:divide-zinc-800 max-h-[380px] overflow-y-auto">
               {actividad.map((a) => (
                 <li key={a.id} className="flex gap-3 py-2.5">
@@ -241,39 +248,14 @@ export function Proyecto() {
         </div>
       </Modal>
 
-      {/* Modal: nueva tarea */}
-      <Modal open={tareaOpen} onClose={() => setTareaOpen(false)} title="Nueva tarea"
-        footer={<>
-          <button onClick={() => setTareaOpen(false)} className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Cancelar</button>
-          <button onClick={guardarTarea} disabled={crearTarea.isPending || !tarea.titulo.trim()} className="h-9 px-4 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition disabled:opacity-50">Crear tarea</button>
-        </>}>
-        <div className="space-y-4">
-          <Field label="Título"><input className={fieldCls} autoFocus value={tarea.titulo} onChange={(e) => setTarea((t) => ({ ...t, titulo: e.target.value }))} /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Asignado">
-              <select className={fieldCls} value={tarea.asignado} onChange={(e) => setTarea((t) => ({ ...t, asignado: e.target.value ? Number(e.target.value) : '' }))}>
-                <option value="">Sin asignar</option>
-                <optgroup label="Participantes del proyecto">
-                  {participantesUsuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                </optgroup>
-                {externosUsuarios.length > 0 && (
-                  <optgroup label="Otras personas (se añadirán al proyecto)">
-                    {externosUsuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                  </optgroup>
-                )}
-              </select>
-            </Field>
-            <Field label="Prioridad"><select className={fieldCls} value={tarea.prioridad} onChange={(e) => setTarea((t) => ({ ...t, prioridad: e.target.value }))}>{PRIORIDADES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
-          </div>
-          {asignadoEsExterno && (
-            <p className="text-[12px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5"><Icon name="alert" className="w-3.5 h-3.5 shrink-0" />Esta persona no participa en el proyecto. Se añadirá como colaborador.</p>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Estimación (horas)"><input type="number" min={0} className={fieldCls} value={tarea.estimacionHoras} onChange={(e) => setTarea((t) => ({ ...t, estimacionHoras: e.target.value === '' ? '' : Number(e.target.value) }))} /></Field>
-            <Field label="Fecha límite"><input type="date" className={fieldCls} value={tarea.fechaLimite} onChange={(e) => setTarea((t) => ({ ...t, fechaLimite: e.target.value }))} /></Field>
-          </div>
-        </div>
-      </Modal>
+      {/* Modal: nueva tarea (componente reutilizable) */}
+      <NuevaTareaModal
+        open={tareaOpen}
+        onClose={() => setTareaOpen(false)}
+        proyectoFijo={{ id: pid, nombre: p.nombre }}
+        usuarios={usuarios}
+        participantesIds={idsParticipantes}
+      />
 
       {/* Modal: añadir participante */}
       <Modal open={partOpen} onClose={() => setPartOpen(false)} title="Añadir participante"

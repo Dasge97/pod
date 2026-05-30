@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProyectos, useCrearProyecto, useUsuarios } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
+import { useAuth } from '../stores/auth'
+import { esEncargado } from '../lib/permisos'
 import { Card, Kpi } from '../components/ui'
 import { ProyectoRow } from '../components/rows'
 import { Modal, Field, fieldCls } from '../components/Modal'
@@ -13,6 +15,8 @@ const PRIORIDADES: [string, string][] = [['baja', 'Baja'], ['media', 'Media'], [
 
 export function Proyectos() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const puedeGestionar = esEncargado(user)
   const [filtro, setFiltro] = useState('todos')
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ nombre: '', cliente: '', descripcion: '', responsable: '' as number | '', prioridad: 'media', fechaInicio: '', fechaFinEstimada: '' })
@@ -56,11 +60,13 @@ export function Proyectos() {
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px] mx-auto">
-      <div className="flex justify-end">
-        <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition">
-          <Icon name="plus" className="w-4 h-4" />Nuevo proyecto
-        </button>
-      </div>
+      {puedeGestionar && (
+        <div className="flex justify-end">
+          <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition">
+            <Icon name="plus" className="w-4 h-4" />Nuevo proyecto
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Kpi icon="folder" label="Activos" value={conteo.activos} sub={`de ${conteo.total}`} tone="blue" onClick={() => setFiltro('progreso')} />

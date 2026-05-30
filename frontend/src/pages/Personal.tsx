@@ -1,15 +1,19 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboardMe } from '../api/hooks'
 import { useAuth } from '../stores/auth'
 import { useHeader } from '../lib/useHeader'
 import { Card, Kpi, ActivityItem } from '../components/ui'
 import { ProyectoRow, TareaRow, BloqueoCard } from '../components/rows'
+import { NuevaTareaModal } from '../components/NuevaTareaModal'
+import { Icon } from '../components/Icon'
 import { EmptyState } from '../components/Brand'
 
 export function Personal() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { data, isLoading } = useDashboardMe()
+  const [tareaOpen, setTareaOpen] = useState(false)
 
   const hoy = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
   useHeader({ title: 'Mi panel', sub: `${hoy} · ¿En qué estoy trabajando?` }, [])
@@ -45,7 +49,9 @@ export function Personal() {
             </div>
           </Card>
 
-          <Card title="Mis tareas" pad={false} action={<span className="text-xs text-zinc-400">por prioridad</span>}>
+          <Card title="Mis tareas" pad={false} action={
+            <button onClick={() => setTareaOpen(true)} className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"><Icon name="plus" className="w-3.5 h-3.5" />Tarea para mí</button>
+          }>
             <div className="px-2 py-1.5">
               {data.tareas.map((t) => <TareaRow key={t.id} t={t} />)}
               {data.tareas.length === 0 && <EmptyState titulo="Sin tareas pendientes">Disfruta del café. ☕</EmptyState>}
@@ -68,6 +74,15 @@ export function Personal() {
           </Card>
         </div>
       </div>
+
+      {user && (
+        <NuevaTareaModal
+          open={tareaOpen}
+          onClose={() => setTareaOpen(false)}
+          asignadoFijo={{ id: user.id, nombre: user.nombre }}
+          proyectos={data.proyectos.map((p) => ({ id: p.id, nombre: p.nombre }))}
+        />
+      )}
     </div>
   )
 }

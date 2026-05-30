@@ -35,6 +35,18 @@ class TareaController extends AbstractController
     }
 
     /**
+     * Asignar una tarea a otra persona (no a uno mismo) requiere ser responsable.
+     * Devuelve una respuesta de error si no se permite, o null si está OK.
+     */
+    private function verificarAsignacion(?Usuario $asignado): ?JsonResponse
+    {
+        if ($asignado === null || $asignado->getId() === $this->getUser()->getId() || $this->isGranted('ROLE_PROJECT_MANAGER')) {
+            return null;
+        }
+        return $this->json(['error' => 'Solo los responsables pueden asignar tareas a otras personas.'], 403);
+    }
+
+    /**
      * Garantiza que quien tiene una tarea asignada forma parte del proyecto.
      * Si no participa, se añade automáticamente como Colaborador.
      */
@@ -62,6 +74,10 @@ class TareaController extends AbstractController
         $tarea->setProyecto($proyecto);
         $this->aplicar($tarea, $d);
 
+        if ($error = $this->verificarAsignacion($tarea->getAsignado())) {
+            return $error;
+        }
+
         $this->em->persist($tarea);
         $this->asegurarParticipacion($proyecto, $tarea->getAsignado());
         $this->logger->log(TipoActividad::TareaCreada, $this->getUser(), 'creó la tarea', $tarea->getTitulo(), $proyecto);
@@ -79,8 +95,14 @@ class TareaController extends AbstractController
     #[Route('/{id}', name: 'api_tasks_update', methods: ['PATCH'], requirements: ['id' => '\d+'])]
     public function update(Tarea $tarea, Request $request): JsonResponse
     {
+        $asignadoPrevio = $tarea->getAsignado();
         $estadoPrevio = $tarea->getEstado();
         $this->aplicar($tarea, $request->toArray());
+
+        // Reasignar a otra persona (distinta de la anterior y de uno mismo) requiere ser responsable.
+        if ($tarea->getAsignado() !== $asignadoPrevio && ($error = $this->verificarAsignacion($tarea->getAsignado()))) {
+            return $error;
+        }
         $this->asegurarParticipacion($tarea->getProyecto(), $tarea->getAsignado());
 
         if ($estadoPrevio !== EstadoTarea::Finalizada && $tarea->getEstado() === EstadoTarea::Finalizada) {

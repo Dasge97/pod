@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useOportunidades } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
+import { useAuth } from '../stores/auth'
+import { esComercial } from '../lib/permisos'
 import { Card, Kpi } from '../components/ui'
 import { OppRow } from '../components/rows'
 import { Icon } from '../components/Icon'
@@ -11,6 +13,8 @@ import { Cargando } from './Personal'
 export function Oportunidades() {
   const [filtro, setFiltro] = useState('abiertas')
   const { data: oportunidades, isLoading } = useOportunidades()
+  const { user } = useAuth()
+  const puedeComercial = esComercial(user)
   useHeader({ title: 'Oportunidades', sub: 'Presupuestos enviados y su seguimiento' }, [])
 
   if (isLoading || !oportunidades) return <Cargando />
@@ -50,7 +54,7 @@ export function Oportunidades() {
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"><Icon name="plus" className="w-3.5 h-3.5" />Nueva</button>
+          {puedeComercial && <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"><Icon name="plus" className="w-3.5 h-3.5" />Nueva</button>}
         </div>
       }>
         <div className="px-2 py-1.5">

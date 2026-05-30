@@ -1,8 +1,14 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { usePersonaOverview } from '../api/hooks'
+import { useQueryClient } from '@tanstack/react-query'
+import { usePersonaOverview, useProyectos } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
+import { useAuth } from '../stores/auth'
+import { esEncargado } from '../lib/permisos'
 import { Card, Kpi, Avatar, Progress, Badge, EstadoBadge } from '../components/ui'
 import { TareaRow, BloqueoCard } from '../components/rows'
+import { NuevaTareaModal } from '../components/NuevaTareaModal'
+import { Icon } from '../components/Icon'
 import { cn, TONES, cargaTone, barTone, type Tone } from '../lib/ui'
 import { Cargando } from './Personal'
 import type { EstadoCarga, ProyectoLite, Tarea } from '../types'
@@ -43,6 +49,11 @@ export function Persona() {
   const { id } = useParams()
   const uid = Number(id)
   const { data, isLoading } = usePersonaOverview(uid)
+  const { data: todosProyectos = [] } = useProyectos()
+  const { user } = useAuth()
+  const puedeAsignar = esEncargado(user) || user?.id === uid
+  const qc = useQueryClient()
+  const [asignarOpen, setAsignarOpen] = useState(false)
 
   useHeader({ crumbs: [{ label: 'Departamento', to: '/departamento' }, { label: data?.usuario.nombre ?? '…' }] }, [data?.usuario.nombre])
 
@@ -94,7 +105,13 @@ export function Persona() {
         <div className="xl:col-span-2 space-y-3">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">Su trabajo</h3>
-            <span className="text-xs text-zinc-400">{kpis.tareasAbiertas} tareas en {proyectos.length} proyectos</span>
+            {puedeAsignar ? (
+              <button onClick={() => setAsignarOpen(true)} className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-emerald-500 text-white text-[12px] font-medium hover:bg-emerald-600 transition">
+                <Icon name="plus" className="w-3.5 h-3.5" />{user?.id === uid ? 'Nueva tarea' : 'Asignar tarea'}
+              </button>
+            ) : (
+              <span className="text-xs text-zinc-400">{kpis.tareasAbiertas} tareas en {proyectos.length} proyectos</span>
+            )}
           </div>
           {ordenados.map((p) => <ProyectoConTareas key={p.id} p={p} tareas={tareasDe(p.id)} />)}
           {proyectos.length === 0 && (
@@ -112,6 +129,14 @@ export function Persona() {
           </Card>
         </div>
       </div>
+
+      <NuevaTareaModal
+        open={asignarOpen}
+        onClose={() => setAsignarOpen(false)}
+        asignadoFijo={{ id: usuario.id, nombre: usuario.nombre }}
+        proyectos={todosProyectos.map((p) => ({ id: p.id, nombre: p.nombre }))}
+        onCreated={() => qc.invalidateQueries({ queryKey: ['persona', uid] })}
+      />
     </div>
   )
 }

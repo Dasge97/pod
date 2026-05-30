@@ -62,6 +62,7 @@ class ProyectoController extends AbstractController
     #[Route('', name: 'api_projects_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_PROJECT_MANAGER');
         $d = $request->toArray();
         $proyecto = new Proyecto();
         $this->aplicar($proyecto, $d);
@@ -86,6 +87,7 @@ class ProyectoController extends AbstractController
     #[Route('/{id}', name: 'api_projects_update', methods: ['PATCH'], requirements: ['id' => '\d+'])]
     public function update(Proyecto $proyecto, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_PROJECT_MANAGER');
         $this->aplicar($proyecto, $request->toArray());
         $this->logger->log(TipoActividad::ProyectoActualizado, $this->getUser(), 'actualizó el proyecto', $proyecto->getNombre(), $proyecto);
         $this->em->flush();
@@ -117,6 +119,7 @@ class ProyectoController extends AbstractController
     #[Route('/{id}/members', name: 'api_projects_members_add', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function addMember(Proyecto $proyecto, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_PROJECT_MANAGER');
         $d = $request->toArray();
         $usuario = $this->usuarios->find($d['usuario'] ?? 0);
         if (!$usuario) {
@@ -139,6 +142,7 @@ class ProyectoController extends AbstractController
     #[Route('/{id}/members/{usuarioId}', name: 'api_projects_members_remove', methods: ['DELETE'], requirements: ['id' => '\d+', 'usuarioId' => '\d+'])]
     public function removeMember(Proyecto $proyecto, int $usuarioId): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_PROJECT_MANAGER');
         $usuario = $this->usuarios->find($usuarioId);
         if ($usuario && ($pu = $this->participantes->findUno($proyecto, $usuario))) {
             $this->em->remove($pu);
@@ -153,6 +157,19 @@ class ProyectoController extends AbstractController
     {
         $feed = $this->actividad->findByProyecto($proyecto->getId());
         return $this->json(array_map(fn ($a) => $this->presenter->actividad($a), $feed));
+    }
+
+    #[Route('/{id}/comments', name: 'api_projects_comment', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function comment(Proyecto $proyecto, Request $request): JsonResponse
+    {
+        $texto = trim($request->toArray()['texto'] ?? '');
+        if ($texto === '') {
+            return $this->json(['error' => 'El comentario está vacío.'], 400);
+        }
+        $act = $this->logger->log(TipoActividad::Comentario, $this->getUser(), 'comentó:', $texto, $proyecto);
+        $this->em->flush();
+
+        return $this->json($this->presenter->actividad($act), 201);
     }
 
     /** Aplica los campos editables de un payload a la entidad. */

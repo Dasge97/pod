@@ -168,6 +168,18 @@ export const useSeguimiento = () => {
   })
 }
 
+export const useComentarProyecto = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ proyectoId, texto }: { proyectoId: number; texto: string }) =>
+      (await api.post(`/projects/${proyectoId}/comments`, { texto })).data,
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['proyecto', v.proyectoId, 'actividad'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
 /* ---------- IA ---------- */
 export const useAnalizarPresupuesto = () =>
   useMutation({

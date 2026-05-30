@@ -2,6 +2,12 @@ security:
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
+    # Jerarquía: un encargado mínimo es ROLE_PROJECT_MANAGER; el admin lo abarca todo.
+    role_hierarchy:
+        ROLE_PROJECT_MANAGER: [ROLE_DEVELOPER]
+        ROLE_DEPT_MANAGER: [ROLE_PROJECT_MANAGER]
+        ROLE_ADMIN: [ROLE_DEPT_MANAGER, ROLE_SALES]
+
     providers:
         app_user_provider:
             entity:

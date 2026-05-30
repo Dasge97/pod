@@ -43,6 +43,7 @@ class OportunidadController extends AbstractController
     #[Route('', name: 'api_opportunities_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_SALES');
         $o = new Oportunidad();
         $this->aplicar($o, $request->toArray());
         if ($o->getResponsableComercial() === null) {
@@ -59,6 +60,7 @@ class OportunidadController extends AbstractController
     #[Route('/{id}', name: 'api_opportunities_update', methods: ['PATCH'], requirements: ['id' => '\d+'])]
     public function update(Oportunidad $o, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_SALES');
         $estadoPrevio = $o->getEstado();
         $this->aplicar($o, $request->toArray());
 
@@ -79,6 +81,7 @@ class OportunidadController extends AbstractController
     #[Route('/{id}/follow-up', name: 'api_opportunities_followup', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function followUp(Oportunidad $o, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_SALES');
         $nota = $request->toArray()['nota'] ?? 'seguimiento registrado';
         $o->setFechaUltimaAccion(new \DateTimeImmutable());
         $this->logger->log(TipoActividad::OportunidadActualizada, $this->getUser(), 'registró seguimiento: '.$nota, $o->getCliente());

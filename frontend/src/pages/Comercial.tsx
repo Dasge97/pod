@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { useDashboardSales } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
+import { useAuth } from '../stores/auth'
+import { esComercial } from '../lib/permisos'
 import { Card, Kpi } from '../components/ui'
 import { OppRow } from '../components/rows'
 import { Icon } from '../components/Icon'
@@ -27,6 +29,8 @@ function AlertaCard({ tone, titulo, sub, meta, onClick }: { tone: Tone; titulo: 
 export function Comercial() {
   const navigate = useNavigate()
   const { data, isLoading } = useDashboardSales()
+  const { user } = useAuth()
+  const puedeComercial = esComercial(user)
   useHeader({ title: 'Comercial', sub: 'Presupuestos y oportunidades abiertas' }, [])
 
   if (isLoading || !data) return <Cargando />
@@ -44,7 +48,7 @@ export function Comercial() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <div className="xl:col-span-2 space-y-5">
-          <Card title="Oportunidades abiertas" pad={false} action={<button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"><Icon name="plus" className="w-3.5 h-3.5" />Nueva</button>}>
+          <Card title="Oportunidades abiertas" pad={false} action={puedeComercial && <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"><Icon name="plus" className="w-3.5 h-3.5" />Nueva</button>}>
             <div className="px-2 py-1.5">
               <div className="grid grid-cols-12 gap-3 px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
                 <span className="col-span-4">Cliente / oportunidad</span><span className="col-span-2">Importe</span><span className="col-span-2">Estado</span>
