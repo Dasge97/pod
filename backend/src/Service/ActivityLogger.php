@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Actividad;
 use App\Entity\Proyecto;
+use App\Entity\Tarea;
 use App\Entity\Usuario;
 use App\Enum\TipoActividad;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,13 +25,15 @@ class ActivityLogger
         string $texto,
         ?string $objeto = null,
         ?Proyecto $proyecto = null,
+        ?Tarea $tarea = null,
     ): Actividad {
         $act = new Actividad();
         $act->setTipo($tipo)
             ->setUsuario($usuario)
             ->setTexto($texto)
             ->setObjeto($objeto)
-            ->setProyecto($proyecto);
+            ->setProyecto($proyecto)
+            ->setTarea($tarea);
 
         $this->em->persist($act);
 

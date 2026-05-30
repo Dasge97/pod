@@ -6,6 +6,7 @@ import { Avatar } from './ui'
 import { cn } from '../lib/ui'
 import { api } from '../api/client'
 import { useAuth } from '../stores/auth'
+import { esAdmin } from '../lib/permisos'
 import { useUi } from '../stores/ui'
 import type { Bloqueo } from '../types'
 
@@ -61,6 +62,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <NavItem icon="file" label="Oportunidades" active={en('/oportunidad')} onClick={() => ir('/oportunidades')} />
           <NavItem icon="alert" label="Bloqueos" active={en('/bloqueos')} badge={bloqueosActivos} onClick={() => ir('/bloqueos')} />
           <NavItem icon="sparkles" label="Asistente IA" active={en('/asistente')} onClick={() => ir('/asistente')} />
+          {esAdmin(user) && <NavItem icon="users" label="Usuarios" active={en('/usuarios')} onClick={() => ir('/usuarios')} />}
         </div>
       </nav>
 

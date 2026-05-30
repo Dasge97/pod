@@ -7,3 +7,15 @@ export const esEncargado = (u?: Usuario | null) =>
 /** Comercial: gestiona oportunidades. */
 export const esComercial = (u?: Usuario | null) =>
   !!u?.roles?.some((r) => ['ROLE_ADMIN', 'ROLE_SALES'].includes(r))
+
+/** Administrador: gestiona usuarios y control total. */
+export const esAdmin = (u?: Usuario | null) => !!u?.roles?.includes('ROLE_ADMIN')
+
+/** Etiquetas de rol para los selectores. */
+export const ROLES_USUARIO: [string, string][] = [
+  ['developer', 'Desarrollador'],
+  ['project_manager', 'Responsable de proyecto'],
+  ['sales', 'Responsable comercial'],
+  ['dept_manager', 'Responsable de departamento'],
+  ['admin', 'Administrador'],
+]

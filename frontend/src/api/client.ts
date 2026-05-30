@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { toast } from '../stores/toast'
 
 // Cliente HTTP único. El token se inyecta desde el store de sesión.
 export const api = axios.create({
@@ -29,11 +30,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (error) => {
-    if (error.response?.status === 401 && token) {
+    const status = error.response?.status
+    if (status === 401 && token) {
       setToken(null)
       if (!location.pathname.startsWith('/login')) {
         location.href = '/login'
       }
+    } else if (status && status >= 400 && error.config?.method !== 'get') {
+      // Errores de acciones (no de lecturas) se muestran como toast.
+      const msg = error.response?.data?.error || 'No se pudo completar la acción.'
+      toast.error(msg)
     }
     return Promise.reject(error)
   },

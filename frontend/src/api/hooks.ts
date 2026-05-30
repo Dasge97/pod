@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
+import { toast } from '../stores/toast'
 import type {
   DashboardMe, DashboardDepartment, DashboardSales,
   ProyectoLite, ProyectoDetalle, Tarea, Bloqueo, Participante, Actividad, Oportunidad, Usuario, Borrador, PersonaOverview,
@@ -55,21 +56,71 @@ export const useUsuarios = () =>
 export const usePersonaOverview = (id: number) =>
   useQuery({ queryKey: ['persona', id], queryFn: async () => (await api.get<PersonaOverview>(`/users/${id}/overview`)).data, enabled: !!id })
 
+export const useUsuariosTodos = () =>
+  useQuery({ queryKey: ['usuarios', 'todos'], queryFn: async () => (await api.get<Usuario[]>('/users?todos=1')).data })
+
+export const useCrearUsuario = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (datos: Record<string, unknown>) => (await api.post<Usuario>('/users', datos)).data,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['usuarios'] }); toast.success('Usuario creado') },
+  })
+}
+
+export const useUpdateUsuario = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, cambios }: { id: number; cambios: Record<string, unknown> }) =>
+      (await api.patch<Usuario>(`/users/${id}`, cambios)).data,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['usuarios'] }); toast.success('Usuario actualizado') },
+  })
+}
+
 /* ---------- Mutaciones ---------- */
 function useInvalidar() {
   const qc = useQueryClient()
   return (proyectoId?: number) => {
     qc.invalidateQueries({ queryKey: ['dashboard'] })
+    qc.invalidateQueries({ queryKey: ['proyectos'] })
+    qc.invalidateQueries({ queryKey: ['persona'] })
     if (proyectoId) qc.invalidateQueries({ queryKey: ['proyecto', proyectoId] })
   }
 }
 
-export const useUpdateTarea = () => {
+export const useTarea = (id: number) =>
+  useQuery({ queryKey: ['tarea', id], queryFn: async () => (await api.get<Tarea>(`/tasks/${id}`)).data, enabled: !!id })
+
+export const useTareaActividad = (id: number) =>
+  useQuery({ queryKey: ['tarea', id, 'actividad'], queryFn: async () => (await api.get<Actividad[]>(`/tasks/${id}/activity`)).data, enabled: !!id })
+
+export const useComentarTarea = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ tareaId, texto }: { tareaId: number; texto: string }) =>
+      (await api.post(`/tasks/${tareaId}/comments`, { texto })).data,
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['tarea', v.tareaId, 'actividad'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Comentario añadido')
+    },
+  })
+}
+
+export const useEliminarTarea = () => {
   const invalidar = useInvalidar()
   return useMutation({
-    mutationFn: async ({ id, cambios }: { id: number; cambios: Partial<Tarea> & { asignado?: number | null } }) =>
+    mutationFn: async ({ id }: { id: number; proyectoId?: number }) => { await api.delete(`/tasks/${id}`) },
+    onSuccess: (_d, v) => { invalidar(v.proyectoId); toast.success('Tarea eliminada') },
+  })
+}
+
+export const useUpdateTarea = () => {
+  const invalidar = useInvalidar()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, cambios }: { id: number; cambios: Record<string, unknown> }) =>
       (await api.patch<Tarea>(`/tasks/${id}`, cambios)).data,
-    onSuccess: (t) => invalidar(t.proyecto?.id),
+    onSuccess: (t) => { invalidar(t.proyecto?.id); qc.invalidateQueries({ queryKey: ['tarea', t.id] }); toast.success('Tarea actualizada') },
   })
 }
 
@@ -78,7 +129,7 @@ export const useCrearTarea = () => {
   return useMutation({
     mutationFn: async (cambios: { proyecto: number; titulo: string } & Record<string, unknown>) =>
       (await api.post<Tarea>('/tasks', cambios)).data,
-    onSuccess: (t) => invalidar(t.proyecto?.id),
+    onSuccess: (t) => { invalidar(t.proyecto?.id); toast.success('Tarea creada') },
   })
 }
 
@@ -87,7 +138,7 @@ export const useCrearBloqueo = () => {
   return useMutation({
     mutationFn: async (cambios: { proyecto: number; titulo: string } & Record<string, unknown>) =>
       (await api.post<Bloqueo>('/blockers', cambios)).data,
-    onSuccess: (b) => invalidar(b.proyecto?.id),
+    onSuccess: (b) => { invalidar(b.proyecto?.id); toast.success('Bloqueo registrado') },
   })
 }
 
@@ -96,7 +147,7 @@ export const useResolverBloqueo = () => {
   return useMutation({
     mutationFn: async ({ id }: { id: number; proyectoId?: number }) =>
       (await api.patch<Bloqueo>(`/blockers/${id}`, { resuelto: true })).data,
-    onSuccess: (_b, vars) => invalidar(vars.proyectoId),
+    onSuccess: (_b, vars) => { invalidar(vars.proyectoId); toast.success('Bloqueo resuelto') },
   })
 }
 
@@ -105,7 +156,7 @@ export const useUpdateProyecto = () => {
   return useMutation({
     mutationFn: async ({ id, cambios }: { id: number; cambios: Record<string, unknown> }) =>
       (await api.patch<ProyectoDetalle>(`/projects/${id}`, cambios)).data,
-    onSuccess: (p) => invalidar(p.id),
+    onSuccess: (p) => { invalidar(p.id); toast.success('Proyecto actualizado') },
   })
 }
 
@@ -116,6 +167,7 @@ export const useCrearProyecto = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['proyectos'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Proyecto creado')
     },
   })
 }
@@ -128,6 +180,7 @@ export const useAddMiembro = () => {
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ['proyecto', v.proyectoId] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Participante añadido')
     },
   })
 }
@@ -140,6 +193,7 @@ export const useRemoveMiembro = () => {
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ['proyecto', v.proyectoId] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Participante eliminado')
     },
   })
 }
@@ -152,6 +206,8 @@ export const useUpdateOportunidad = () => {
     onSuccess: (o) => {
       qc.invalidateQueries({ queryKey: ['dashboard', 'sales'] })
       qc.invalidateQueries({ queryKey: ['oportunidad', o.id] })
+      qc.invalidateQueries({ queryKey: ['oportunidades'] })
+      toast.success('Oportunidad actualizada')
     },
   })
 }
@@ -164,6 +220,7 @@ export const useSeguimiento = () => {
     onSuccess: (o) => {
       qc.invalidateQueries({ queryKey: ['dashboard', 'sales'] })
       qc.invalidateQueries({ queryKey: ['oportunidad', o.id] })
+      toast.success('Seguimiento registrado')
     },
   })
 }
@@ -176,6 +233,7 @@ export const useComentarProyecto = () => {
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ['proyecto', v.proyectoId, 'actividad'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Comentario añadido')
     },
   })
 }
@@ -192,6 +250,6 @@ export const useCrearDesdeBorrador = () => {
   return useMutation({
     mutationFn: async (payload: Record<string, unknown>) =>
       (await api.post<ProyectoDetalle & { tareasCreadas: number }>('/projects/from-draft', payload)).data,
-    onSuccess: () => invalidar(),
+    onSuccess: () => { invalidar(); toast.success('Proyecto creado desde IA') },
   })
 }

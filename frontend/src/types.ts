@@ -65,6 +65,7 @@ export interface Tarea {
   estimacionHoras: number | null
   horasConsumidas: number
   fechaLimite: string | null
+  fechaFinalizacion: string | null
   vencida: boolean
   proyecto?: RefProyecto
 }
@@ -108,6 +109,7 @@ export interface Actividad {
   objeto: string | null
   usuario: Usuario | null
   proyecto: RefProyecto | null
+  tareaId: number | null
   fecha: string
 }
 

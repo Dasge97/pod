@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { TareaDetalleModal } from './TareaDetalleModal'
 import { useAuth } from '../stores/auth'
 import { useUi } from '../stores/ui'
 import { cn } from '../lib/ui'
@@ -46,6 +47,8 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+
+      <TareaDetalleModal />
     </div>
   )
 }

@@ -8,6 +8,7 @@ enum TipoActividad: string
     case ProyectoActualizado = 'proyecto_actualizado';
     case TareaCreada = 'tarea_creada';
     case TareaCompletada = 'tarea_completada';
+    case TareaReabierta = 'tarea_reabierta';
     case BloqueoCreado = 'bloqueo_creado';
     case BloqueoResuelto = 'bloqueo_resuelto';
     case ParticipanteAnadido = 'participante_anadido';
@@ -22,7 +23,7 @@ enum TipoActividad: string
     public function familia(): string
     {
         return match ($this) {
-            self::TareaCreada, self::TareaCompletada => 'tarea',
+            self::TareaCreada, self::TareaCompletada, self::TareaReabierta => 'tarea',
             self::BloqueoCreado, self::BloqueoResuelto => 'bloqueo',
             self::ProyectoActualizado => 'estado',
             self::ProyectoCreado => 'proyecto',

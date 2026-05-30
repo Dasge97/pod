@@ -13,6 +13,11 @@
   }
 }
 
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Scrollbar discreta, acorde a la estética del panel. */
 @layer utilities {
   ::-webkit-scrollbar {

@@ -24,6 +24,10 @@ class Actividad
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?Proyecto $proyecto = null;
 
+    #[ORM\ManyToOne(targetEntity: Tarea::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?Tarea $tarea = null;
+
     #[ORM\Column(enumType: TipoActividad::class)]
     private TipoActividad $tipo = TipoActividad::Comentario;
 
@@ -50,6 +54,9 @@ class Actividad
 
     public function getProyecto(): ?Proyecto { return $this->proyecto; }
     public function setProyecto(?Proyecto $v): self { $this->proyecto = $v; return $this; }
+
+    public function getTarea(): ?Tarea { return $this->tarea; }
+    public function setTarea(?Tarea $v): self { $this->tarea = $v; return $this; }
 
     public function getTipo(): TipoActividad { return $this->tipo; }
     public function setTipo(TipoActividad $v): self { $this->tipo = $v; return $this; }

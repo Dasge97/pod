@@ -11,6 +11,7 @@ import { Persona } from './pages/Persona'
 import { Oportunidad } from './pages/Oportunidad'
 import { Oportunidades } from './pages/Oportunidades'
 import { Bloqueos } from './pages/Bloqueos'
+import { Usuarios } from './pages/Usuarios'
 import { Asistente } from './pages/Asistente'
 import { useAuth } from './stores/auth'
 
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="oportunidades" element={<Oportunidades />} />
         <Route path="oportunidad/:id" element={<Oportunidad />} />
         <Route path="bloqueos" element={<Bloqueos />} />
+        <Route path="usuarios" element={<Usuarios />} />
         <Route path="asistente" element={<Asistente />} />
       </Route>
     </Routes>

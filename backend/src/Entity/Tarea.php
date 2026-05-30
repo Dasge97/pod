@@ -48,6 +48,9 @@ class Tarea
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $fechaLimite = null;
 
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $fechaFinalizacion = null;
+
     public function __construct()
     {
         $this->fechaCreacion = new \DateTimeImmutable();
@@ -83,6 +86,9 @@ class Tarea
 
     public function getFechaLimite(): ?\DateTimeImmutable { return $this->fechaLimite; }
     public function setFechaLimite(?\DateTimeImmutable $v): self { $this->fechaLimite = $v; return $this; }
+
+    public function getFechaFinalizacion(): ?\DateTimeImmutable { return $this->fechaFinalizacion; }
+    public function setFechaFinalizacion(?\DateTimeImmutable $v): self { $this->fechaFinalizacion = $v; return $this; }
 
     /** ¿Vencida? Fecha límite pasada y tarea sin finalizar. */
     public function isVencida(): bool

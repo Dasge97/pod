@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useProyecto, useProyectoTareas, useProyectoBloqueos, useProyectoMiembros, useProyectoActividad, useResolverBloqueo, useUpdateProyecto, useUsuarios, useAddMiembro, useRemoveMiembro, useComentarProyecto } from '../api/hooks'
+import { useProyecto, useProyectoTareas, useProyectoBloqueos, useProyectoMiembros, useProyectoActividad, useResolverBloqueo, useUpdateProyecto, useUsuarios, useAddMiembro, useRemoveMiembro, useComentarProyecto, useCrearBloqueo } from '../api/hooks'
 import { useHeader } from '../lib/useHeader'
 import { useAuth } from '../stores/auth'
 import { esEncargado } from '../lib/permisos'
@@ -44,7 +44,10 @@ export function Proyecto() {
   const addMiembro = useAddMiembro()
   const removeMiembro = useRemoveMiembro()
   const comentar = useComentarProyecto()
+  const crearBloqueo = useCrearBloqueo()
   const [comentario, setComentario] = useState('')
+  const [bloqueoOpen, setBloqueoOpen] = useState(false)
+  const [formBloqueo, setFormBloqueo] = useState({ titulo: '', descripcion: '', severidad: 'alta' })
   const { data: usuarios = [] } = useUsuarios()
   const [editOpen, setEditOpen] = useState(false)
   const [tareaOpen, setTareaOpen] = useState(false)
@@ -88,6 +91,12 @@ export function Proyecto() {
     comentar.mutate({ proyectoId: pid, texto: comentario.trim() }, { onSuccess: () => setComentario('') })
   }
 
+  function registrarBloqueo() {
+    if (!formBloqueo.titulo.trim()) return
+    crearBloqueo.mutate({ proyecto: pid, titulo: formBloqueo.titulo, descripcion: formBloqueo.descripcion || null, severidad: formBloqueo.severidad },
+      { onSuccess: () => { setBloqueoOpen(false); setFormBloqueo({ titulo: '', descripcion: '', severidad: 'alta' }) } })
+  }
+
   const idsParticipantes = miembros.map((m) => m.usuario.id)
   const disponiblesParaAnadir = usuarios.filter((u) => !idsParticipantes.includes(u.id))
 
@@ -113,12 +122,13 @@ export function Proyecto() {
               <span className="text-[13px] font-medium text-zinc-700 dark:text-zinc-200">{p.responsable?.nombre}</span>
             </div>
           </div>
-          {puedeGestionar && (
-            <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setBloqueoOpen(true)} className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:border-red-300 hover:text-red-600 dark:hover:text-red-400 transition flex items-center gap-1.5"><Icon name="alert" className="w-4 h-4" />Bloqueo</button>
+            {puedeGestionar && <>
               <button onClick={abrirEdicion} className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition flex items-center gap-1.5"><Icon name="edit" className="w-4 h-4" />Editar</button>
               <button onClick={() => setTareaOpen(true)} className="h-9 px-3 rounded-lg bg-emerald-500 text-white text-[13px] font-medium hover:bg-emerald-600 transition flex items-center gap-1.5"><Icon name="plus" className="w-4 h-4" />Nueva tarea</button>
-            </div>
-          )}
+            </>}
+          </div>
         </div>
 
         <div className="mt-5 pt-5 border-t border-zinc-100 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -162,10 +172,22 @@ export function Proyecto() {
             </Card>
           )}
 
-          <Card title="Tareas" pad={false} action={<span className="text-xs text-zinc-400 font-mono">{tareas.length}</span>}>
+          <Card title="Tareas" pad={false} action={<span className="text-xs text-zinc-400 font-mono">{tareas.filter((t) => t.estado !== 'finalizada').length} activas · {finalizadas} hechas</span>}>
             <div className="px-2 py-1.5">
-              {tareas.map((t) => <TareaRow key={t.id} t={t} showProyecto={false} />)}
+              {tareas.filter((t) => t.estado !== 'finalizada').map((t) => <TareaRow key={t.id} t={t} showProyecto={false} />)}
+              {tareas.length > 0 && tareas.filter((t) => t.estado !== 'finalizada').length === 0 && <p className="px-3 py-6 text-sm text-zinc-400 text-center">Todas las tareas están completadas. 🎉</p>}
               {tareas.length === 0 && <p className="px-3 py-6 text-sm text-zinc-400 text-center">Este proyecto aún no tiene tareas.</p>}
+
+              {finalizadas > 0 && (
+                <details className="mt-1">
+                  <summary className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 cursor-pointer hover:text-zinc-600 dark:hover:text-zinc-300 select-none flex items-center gap-1.5">
+                    <Icon name="check" className="w-3.5 h-3.5" />Completadas ({finalizadas})
+                  </summary>
+                  <div className="opacity-75">
+                    {tareas.filter((t) => t.estado === 'finalizada').map((t) => <TareaRow key={t.id} t={t} showProyecto={false} />)}
+                  </div>
+                </details>
+              )}
             </div>
           </Card>
         </div>
@@ -256,6 +278,19 @@ export function Proyecto() {
         usuarios={usuarios}
         participantesIds={idsParticipantes}
       />
+
+      {/* Modal: registrar bloqueo */}
+      <Modal open={bloqueoOpen} onClose={() => setBloqueoOpen(false)} title="Registrar bloqueo"
+        footer={<>
+          <button onClick={() => setBloqueoOpen(false)} className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[13px] font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">Cancelar</button>
+          <button onClick={registrarBloqueo} disabled={crearBloqueo.isPending || !formBloqueo.titulo.trim()} className="h-9 px-4 rounded-lg bg-red-500 text-white text-[13px] font-medium hover:bg-red-600 transition disabled:opacity-50">Registrar</button>
+        </>}>
+        <div className="space-y-4">
+          <Field label="¿Qué está bloqueado?"><input className={fieldCls} autoFocus value={formBloqueo.titulo} onChange={(e) => setFormBloqueo((f) => ({ ...f, titulo: e.target.value }))} /></Field>
+          <Field label="Descripción"><textarea className={cn(fieldCls, 'h-auto py-2 resize-none')} rows={3} value={formBloqueo.descripcion} onChange={(e) => setFormBloqueo((f) => ({ ...f, descripcion: e.target.value }))} placeholder="Explica el impedimento…" /></Field>
+          <Field label="Severidad"><select className={fieldCls} value={formBloqueo.severidad} onChange={(e) => setFormBloqueo((f) => ({ ...f, severidad: e.target.value }))}><option value="critica">Crítica</option><option value="alta">Alta</option><option value="media">Media</option></select></Field>
+        </div>
+      </Modal>
 
       {/* Modal: añadir participante */}
       <Modal open={partOpen} onClose={() => setPartOpen(false)} title="Añadir participante"

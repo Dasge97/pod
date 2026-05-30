@@ -102,6 +102,7 @@ class Presenter
             'estimacionHoras' => $t->getEstimacionHoras(),
             'horasConsumidas' => $t->getHorasConsumidas(),
             'fechaLimite' => $this->fecha($t->getFechaLimite()),
+            'fechaFinalizacion' => $this->fechaHora($t->getFechaFinalizacion()),
             'vencida' => $t->isVencida(),
         ];
         if ($conProyecto && $t->getProyecto()) {
@@ -170,6 +171,7 @@ class Presenter
                 'id' => $a->getProyecto()->getId(),
                 'nombre' => $a->getProyecto()->getNombre(),
             ] : null,
+            'tareaId' => $a->getTarea()?->getId(),
             'fecha' => $this->fechaHora($a->getFecha()),
         ];
     }

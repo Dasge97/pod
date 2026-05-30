@@ -10,6 +10,7 @@ use App\Enum\EstadoTarea;
 use App\Enum\Prioridad;
 use App\Enum\RolProyecto;
 use App\Enum\TipoActividad;
+use App\Repository\ActividadRepository;
 use App\Repository\ProyectoRepository;
 use App\Repository\ProyectoUsuarioRepository;
 use App\Repository\UsuarioRepository;
@@ -28,6 +29,7 @@ class TareaController extends AbstractController
         private ProyectoRepository $proyectos,
         private ProyectoUsuarioRepository $participantes,
         private UsuarioRepository $usuarios,
+        private ActividadRepository $actividad,
         private Presenter $presenter,
         private ActivityLogger $logger,
         private EntityManagerInterface $em,
@@ -105,17 +107,47 @@ class TareaController extends AbstractController
         }
         $this->asegurarParticipacion($tarea->getProyecto(), $tarea->getAsignado());
 
-        if ($estadoPrevio !== EstadoTarea::Finalizada && $tarea->getEstado() === EstadoTarea::Finalizada) {
-            $this->logger->log(TipoActividad::TareaCompletada, $this->getUser(), 'completó', $tarea->getTitulo(), $tarea->getProyecto());
+        $fin = EstadoTarea::Finalizada;
+        if ($estadoPrevio !== $fin && $tarea->getEstado() === $fin) {
+            $tarea->setFechaFinalizacion(new \DateTimeImmutable());
+            $this->logger->log(TipoActividad::TareaCompletada, $this->getUser(), 'completó la tarea', $tarea->getTitulo(), $tarea->getProyecto(), $tarea);
+        } elseif ($estadoPrevio === $fin && $tarea->getEstado() !== $fin) {
+            $tarea->setFechaFinalizacion(null);
+            $this->logger->log(TipoActividad::TareaReabierta, $this->getUser(), 'reabrió la tarea', $tarea->getTitulo(), $tarea->getProyecto(), $tarea);
         }
         $this->em->flush();
 
         return $this->json($this->presenter->tarea($tarea));
     }
 
+    #[Route('/{id}/activity', name: 'api_tasks_activity', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function activity(Tarea $tarea): JsonResponse
+    {
+        $feed = $this->actividad->findByTarea($tarea->getId());
+        return $this->json(array_map(fn ($a) => $this->presenter->actividad($a), $feed));
+    }
+
+    #[Route('/{id}/comments', name: 'api_tasks_comment', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function comment(Tarea $tarea, Request $request): JsonResponse
+    {
+        $texto = trim($request->toArray()['texto'] ?? '');
+        if ($texto === '') {
+            return $this->json(['error' => 'El comentario está vacío.'], 400);
+        }
+        $act = $this->logger->log(TipoActividad::Comentario, $this->getUser(), 'comentó:', $texto, $tarea->getProyecto(), $tarea);
+        $this->em->flush();
+
+        return $this->json($this->presenter->actividad($act), 201);
+    }
+
     #[Route('/{id}', name: 'api_tasks_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
     public function delete(Tarea $tarea): JsonResponse
     {
+        // Eliminar requiere ser responsable o ser quien la tiene asignada.
+        $esAsignado = $tarea->getAsignado()?->getId() === $this->getUser()->getId();
+        if (!$esAsignado && !$this->isGranted('ROLE_PROJECT_MANAGER')) {
+            return $this->json(['error' => 'No tienes permiso para eliminar esta tarea.'], 403);
+        }
         $this->em->remove($tarea);
         $this->em->flush();
         return $this->json(null, 204);

@@ -42,6 +42,17 @@ class ActividadRepository extends ServiceEntityRepository
     }
 
     /** @return Actividad[] */
+    public function findByTarea(int $tareaId, int $limit = 30): array
+    {
+        return $this->createQueryBuilder('a')
+            ->leftJoin('a.usuario', 'u')->addSelect('u')
+            ->andWhere('a.tarea = :t')->setParameter('t', $tareaId)
+            ->orderBy('a.fecha', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()->getResult();
+    }
+
+    /** @return Actividad[] */
     public function findByProyecto(int $proyectoId, int $limit = 20): array
     {
         return $this->createQueryBuilder('a')

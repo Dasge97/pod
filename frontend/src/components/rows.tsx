@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Icon } from './Icon'
 import { Avatar, Progress, EstadoBadge, PrioridadBadge, OppBadge, Badge } from './ui'
 import { EstadoTareaMenu } from './EstadoTareaMenu'
+import { useUpdateTarea } from '../api/hooks'
+import { useTareaModal } from '../stores/tareaModal'
 import { cn, barTone, type Tone } from '../lib/ui'
 import { fmtFechaCorta, fmtEur } from '../lib/format'
 import type { ProyectoLite, Tarea, Bloqueo, Oportunidad } from '../types'
@@ -34,19 +36,28 @@ export function ProyectoRow({ p }: { p: ProyectoLite }) {
 
 /* ---------- Fila de tarea ---------- */
 export function TareaRow({ t, showProyecto = true }: { t: Tarea; showProyecto?: boolean }) {
-  const navigate = useNavigate()
+  const abrir = useTareaModal((s) => s.abrir)
+  const update = useUpdateTarea()
   const over = t.estimacionHoras != null && t.horasConsumidas > t.estimacionHoras
+  const completada = t.estado === 'finalizada'
   return (
     <div
-      onClick={() => t.proyecto && navigate(`/proyecto/${t.proyecto.id}`)}
+      onClick={() => abrir(t.id)}
       className="group w-full flex items-center gap-3 px-3 h-12 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition text-left cursor-pointer"
     >
+      <button
+        onClick={(e) => { e.stopPropagation(); update.mutate({ id: t.id, cambios: { estado: completada ? 'progreso' : 'finalizada' } }) }}
+        title={completada ? 'Reabrir' : 'Marcar completada'}
+        className={cn('w-5 h-5 shrink-0 rounded-md border flex items-center justify-center transition', completada ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-zinc-300 dark:border-zinc-600 hover:border-emerald-400')}
+      >
+        {completada && <Icon name="check" className="w-3 h-3" />}
+      </button>
       <span className="shrink-0"><PrioridadBadge prioridad={t.prioridad} label={t.prioridadLabel} /></span>
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100 truncate">{t.titulo}</div>
+        <div className={cn('text-[13px] font-medium truncate', completada ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-zinc-100')}>{t.titulo}</div>
         {showProyecto && t.proyecto && <div className="text-[11px] text-zinc-400 truncate">{t.proyecto.nombre}</div>}
       </div>
-      <span className="hidden lg:block"><EstadoTareaMenu tarea={t} /></span>
+      <span className="hidden lg:block" onClick={(e) => e.stopPropagation()}><EstadoTareaMenu tarea={t} /></span>
       <span className={cn('font-mono text-[11px] tabular-nums shrink-0 w-16 text-right', over ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-400')}>
         {t.horasConsumidas}/{t.estimacionHoras ?? '—'} h
       </span>
